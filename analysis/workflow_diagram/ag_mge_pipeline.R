@@ -1,5 +1,5 @@
 # ########################################################## ####
-# Nonsense mutations in STAPHYLOCOCCUS AUREUS                ####
+# AG introductions in KLEBSIELLA                             ####
 # Author:    Cara Conradsen                                  ####
 # ########################################################## ####
 
@@ -15,7 +15,7 @@ kpne_QC[label = < post-QC FASTAs,<i> n = 1,695 </i><br/><font face='Courier New'
 prokka_anno[label =  <annotate proteins <br/><font face='Courier New'> prokka 1.14.6</font>>]
 PIRATE[label = < determine core/accessory genes <br/><font face='Courier New'>PIRATE 1.0.5</font>>]
 map_ags[label = < map AGs to MGEs <br/><font face='Courier New'> R: data.table | GRanges </font>>]
-consensus_ags[label = < extract representative AGs <br/><font face='Courier New'> R: data.table | Biostrings </font>>]
+consensus_ags[label = < extract representative AGs <br/><font face='Courier New'> PIRATE select_representative.pl </font>>]
 
 subgraph cluster_0 {
 graph[shape = rectangle]
