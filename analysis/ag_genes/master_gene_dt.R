@@ -39,16 +39,16 @@ stopCluster(cl)
 
 # get duration
 end.time <- Sys.time()
-end.time - start.time# Time difference of 18.45449 mins
+end.time - start.time# Time difference of 10.45449 mins
 
 # get unique loci IDs
 kpne_prokka_annotation$locus_id = paste0(gsub("SPARK_","K", kpne_prokka_annotation$seqnames),
-                                         gsub("k__0","", kpne_prokka_annotation$locus_tag))
+                                         gsub("k__","", kpne_prokka_annotation$locus_tag))
 
 # There are 8835314 unique loci
 
 
-#fwrite(kpne_prokka_annotation, paste0(outdir_dat, "/kpne_prokka_annotation.csv"))
+# fwrite(kpne_prokka_annotation, paste0(outdir_dat, "/kpne_prokka_annotation.csv"))
 # kpne_prokka_annotation <- fread(paste0(outdir_dat, "/kpne_prokka_annotation.csv"))
 
 
@@ -61,7 +61,7 @@ pirate_genes_dir <- "C:/Users/carac/Dropbox/Vos_Lab/kpne_ags/input_data/PIRATE_1
 pirate_genes_faas <- list.files(path = pirate_genes_dir, pattern = ".aa.fasta", full.names = TRUE)
 
 # start timer
-start.time <- Sys.time()
+start.time <- Sys.time() 
 cl <- makeCluster(num_cores)
 registerDoParallel(cl)
 
@@ -69,21 +69,35 @@ registerDoParallel(cl)
 pirate_pangenome_aln<- foreach(i = 1:length(pirate_genes_faas),
                                .combine = "rbind",
                                .packages = c("Biostrings")) %dopar% {
-                                 gene_aln_temp <- readAAStringSet(pirate_genes_faas[i])
-                                 gene_aln_temp <- lapply(names(gene_aln_temp),
-                                                         function(x) strsplit(x, "\\|")[[1]])
+                                 
+                                 gene_aln_temp <- readLines(pirate_genes_faas[i])
+                                 
+                                 gene_aln_temp <-  grep("^>", gene_aln_temp, value = TRUE)
+                                 
                                  gene_aln_temp <- data.frame(gene_family_aln = gsub(".aa.fasta","", basename(pirate_genes_faas[i])),
-                                                             ID_contig = sapply(gene_aln_temp, `[`, 1))
+                                                             ID_contig = gene_aln_temp)
                                  # info to be outputted
                                  gene_aln_temp
                                }
 
-#fwrite(pirate_pangenome_aln, paste0(outdir_dat, "/pirate_pangenome_aln.csv"))
+# Stop the parallel backend after the loop is done
+stopCluster(cl)
+
+# get duration
+end.time <- Sys.time()
+end.time - start.time# Time difference of 6.855873 secs
+
+pirate_pangenome_aln$ID_contig = gsub(">","",pirate_pangenome_aln$ID_contig)
+
+# fwrite(pirate_pangenome_aln, paste0(outdir_dat, "/pirate_pangenome_aln.csv"))
 # pirate_pangenome_aln <- fread(paste0(outdir_dat, "/pirate_pangenome_aln.csv"))
 
 
+# 3. Assign core / accessory + ORFans -------------------------------------
+kpne_pangenome_dt = merge()
+## there is a file in the pirate output called loci_list.tab which does what I wnat to do here
 
-#3. Import integrons (IntegronFinder)  -------------------------------------------
+#4. Import integrons (IntegronFinder)  -------------------------------------------
 
 integron_dir = list.files("./input_data/integron_finder_results/", full.names = TRUE,
                           recursive = TRUE, pattern = ".summary")
