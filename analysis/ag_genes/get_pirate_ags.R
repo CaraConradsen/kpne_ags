@@ -22,6 +22,8 @@ kpne_pangome_dt_lng <- melt(kpne_pangome_dt,
 # remove missing loci
 kpne_pangome_dt_lng <- kpne_pangome_dt_lng[loci_id!="",]
 
+fwrite(kpne_pangome_dt_lng, paste0(outdir_dat, "/kpne_pangome_dt_lng.csv"))
+
 # 8321877 unique loci
 length(unique(kpne_pangome_dt_lng[pan_freq >= 0.95, gene_family]))# missing 40?
 length(unique(kpne_pangome_dt_lng[pan_freq < 0.95, gene_family]))

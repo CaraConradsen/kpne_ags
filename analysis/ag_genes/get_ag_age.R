@@ -31,6 +31,8 @@ ag_age_dt <- foreach(i = list_unique_ags,
                      .packages = c("data.table", "seqinr", "Biostrings"),
                      .combine = rbind) %do% {
                        
+                       
+                       
                        n100_smpl_geno = sample(list_unique_genomes,1000)
                        
                        n100_smpl_loci_names = ag_dt[gene_family == i & geno_id %chin% n100_smpl_geno, loci_id]
@@ -80,7 +82,7 @@ ag_age_dt <- foreach(i = list_unique_ags,
 # end.time - start.time# Time difference of 
 
 fwrite(ag_age_dt, paste0(outdir_dat, "/ag_age_dt.csv"))
-
+# ag_age_dt <-fread(paste0(outdir_dat, "/ag_age_dt.csv"))
 
 # plot data
 ag_age_dt = as.data.table(ag_age_dt)
@@ -89,7 +91,7 @@ ag_age_dt = as.data.table(ag_age_dt)
 non_na = nrow(ag_age_dt[!is.na(max_ks)])
 
 # set axes
-pretty_x = seq(-0.5, ceiling(max(ag_age_dt$max_ks, na.rm = TRUE)), by = 1.5)
+pretty_x = c(0, 0.4)
 pretty_y = pretty(range(ag_age_dt$ag_count/1000, na.rm = TRUE))
 
 mat <- matrix(c(1,2,3,4), byrow = TRUE, ncol=2)
@@ -97,30 +99,31 @@ mat <- matrix(c(1,2,3,4), byrow = TRUE, ncol=2)
 
 # start figure
 
-png(filename = paste0(outdir_fig,"/Ag_age_vs_freq.png"),
+png(filename = paste0(outdir_fig,"/Ag_age_vs_freq_2.png"),
+    pointsize = 20,
     width = 9, height = 9, units = "in", res = 300)
 
-layout(mat, widths = c(2.25,0.75),
-       heights = c(0.75, 2.25))
-
-par(mar = c(0.25,4,0.5,0.5))
-with(ag_age_dt[!is.na(max_ks),],
-     hist(max_ks,
-          xaxt = "n",
-          las=2,
-          border = "darkblue",
-          ylab = "count",
-          col = "royalblue1",
-          breaks = 80,
-          main="",
-          xlim = range(pretty_x)))
-
-plot.new()
+# layout(mat, widths = c(2.25,0.75),
+#        heights = c(0.75, 2.25))
+# 
+# par(mar = c(0.25,4,0.5,0.5))
+# with(ag_age_dt[!is.na(max_ks),],
+#      hist(max_ks,
+#           xaxt = "n",
+#           las=2,
+#           border = "darkblue",
+#           ylab = "count",
+#           col = "royalblue1",
+#           breaks = 80,
+#           main="",
+#           xlim = range(pretty_x)))
+# 
+# plot.new()
 
 par(mar = c(4,4,0.25,0.5))
 with(ag_age_dt[!is.na(max_ks),],
-     plot(max_ks, ag_count/1000,
-          pch=16,
+     plot( ag_count/1000,max_ks,
+          pch=16, 
           las = 2,
           xaxt = "n",
           ylab = "AG frequency in 1000 genomes",
@@ -128,25 +131,25 @@ with(ag_age_dt[!is.na(max_ks),],
           xlim = range(pretty_x),
           ylim = range(pretty_y),
           col = rgb(0.1,0.1,0.9, alpha = 0.5)))
-axis(side = 1, at = pretty_x, labels = pretty_x)
-legend("topright", bty='n',
-       paste0(non_na, " non-NA AGs out of ", nrow(ag_age_dt)))
-
-# barplot version
-par(mar = c(4,0.25,0.25,0.5))
-hist_ag_count <- with(ag_age_dt[!is.na(max_ks),],
-                      hist(ag_count/1000,
-                           breaks = 80, 
-                           plot = FALSE))
-
-# Plot as a horizontal barplot
-barplot(hist_ag_count$counts,
-        horiz = TRUE,
-        yaxt = "n",
-        xlab = "count",
-        space = 0,
-        main= "",
-        col = "royalblue1",
-        names.arg = round(hist_ag_count$mids, 1))
+axis(side = 1, at = seq(0,1,0.1), labels = seq(0,1,0.1))
+# legend("topright", bty='n',
+#        paste0(non_na, " non-NA AGs out of ", nrow(ag_age_dt)))
+# 
+# # barplot version
+# par(mar = c(4,0.25,0.25,0.5))
+# hist_ag_count <- with(ag_age_dt[!is.na(max_ks),],
+#                       hist(ag_count/1000,
+#                            breaks = 80, 
+#                            plot = FALSE))
+# 
+# # Plot as a horizontal barplot
+# barplot(hist_ag_count$counts,
+#         horiz = TRUE,
+#         yaxt = "n",
+#         xlab = "count",
+#         space = 0,
+#         main= "",
+#         col = "royalblue1",
+#         names.arg = round(hist_ag_count$mids, 1))
 
 dev.off()

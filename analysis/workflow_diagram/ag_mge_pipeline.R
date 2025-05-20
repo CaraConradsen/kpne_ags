@@ -22,10 +22,21 @@ graph[shape = rectangle]
 bgcolor = grey90
 color = grey90
 
+label = \"Identify and remove plasmids contigs\";
+labeljust = l;  // Set label justification to left
+node[shape = rectangle, style=\"rounded,filled\", fillcolor = white, margin = 0.25]
+plasmids[label = <plasmids<br/><font face='Courier New'>MOB-suite </font>>]
+mlplasmids[label = <plasmids<br/><font face='Courier New'>mlplasmids</font>>]
+}
+
+subgraph cluster_1 {
+graph[shape = rectangle]
+bgcolor = grey90
+color = grey90
+
 label = \"Get MGE regions\";
 labeljust = l;  // Set label justification to left
 node[shape = rectangle, style=\"rounded,filled\", fillcolor = white, margin = 0.25]
-plasmids[label = <plasmids<br/><font face='Courier New'>MOB-suite | PlasmidFinder</font>>]
 prophage[label = <prophages<br/><font face='Courier New'>PHASTER</font>>]
 ices[label = 'ICEs\n?']
 integrons[label = <integrons<br/><font face='Courier New'>IntegronFinder</font>>]
@@ -34,7 +45,7 @@ IS[label = <IS<br/><font face='Courier New'>ISCEcan</font>>]
 }
 
 kpne_assemblies -> kpne_QC -> prokka_anno -> PIRATE -> map_ags
-kpne_QC -> {plasmids prophage ices integrons transposons IS} -> map_ags
+kpne_QC -> {plasmids mlplasmids prophage ices integrons transposons IS} -> map_ags
 PIRATE -> consensus_ags
 }")
 

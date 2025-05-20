@@ -179,3 +179,16 @@ kpne_integrons$source = "IntegronFinder"
 #fwrite(kpne_integrons, paste0(outdir_dat, "/kpne_integrons.csv"))
 # kpne_integrons <- fread(paste0(outdir_dat, "/kpne_integrons.csv"))
 
+
+
+# Import ISEcan info ------------------------------------------------------
+isescan_dir <- list.files("./input_data/kpne_isescan",
+                          recursive = TRUE, 
+                          full.names = TRUE,
+                          pattern = ".csv")
+
+isescan_dat <- foreach(i = 1:length(isescan_dir), 
+                       .combine = "rbind",
+                       .packages = "data.table") %do% {
+                         fread(isescan_dir[i])
+                       }
