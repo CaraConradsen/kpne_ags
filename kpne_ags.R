@@ -23,9 +23,9 @@ invisible(sapply(
 
 # Package dependencies
 # this function attaches libraries, but also checks and installs missing packages
-packages <- c("ape","Biostrings","BSgenome", "data.table","doParallel","dplyr",
+packages <- c("ape","Biostrings","BSgenome", "data.table","doParallel","dplyr","MASS", 
               "eulerr","foreach","GenomicRanges","ggplot2","ggtree","gUtils","ggnewscale",
-              "ggiraph","htmlwidgets", "jsonlite", "phyloseq", "micropan","VennDiagram", 
+              "ggiraph","htmlwidgets", "jsonlite","pegas", "phyloseq", "micropan","VennDiagram", 
               "phytools","RColorBrewer","seqinr","stats","stringr","treeio", "vegan")
 
 # load in functions, uses BiocManager::install which handles both 

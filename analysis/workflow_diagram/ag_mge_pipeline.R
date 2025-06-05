@@ -38,14 +38,16 @@ label = \"Get MGE regions\";
 labeljust = l;  // Set label justification to left
 node[shape = rectangle, style=\"rounded,filled\", fillcolor = white, margin = 0.25]
 prophage[label = <prophages<br/><font face='Courier New'>PHASTER</font>>]
-ices[label = 'ICEs\n?']
+ices[label = <detect ICEs<br/><font face='Courier New'>blastn ICEberg 2.0</font>>]
+ice2[label = <validate ICEs<br/><font face='Courier New'>CONJScan</font>>]
 integrons[label = <integrons<br/><font face='Courier New'>IntegronFinder</font>>]
 transposons[label = 'transposons\n?']
 IS[label = <IS<br/><font face='Courier New'>ISCEcan</font>>]
 }
 
 kpne_assemblies -> kpne_QC -> prokka_anno -> PIRATE -> map_ags
-kpne_QC -> {plasmids mlplasmids prophage ices integrons transposons IS} -> map_ags
+kpne_QC -> ices -> ice2 -> map_ags
+kpne_QC -> {plasmids mlplasmids prophage integrons transposons IS} -> map_ags
 PIRATE -> consensus_ags
 }")
 

@@ -1,5 +1,5 @@
 # Fix up plots
-temp_plamsid_dat <- fread(paste0(outdir_dat, "/kpneu_plasmids.csv"))
+temp_plamsid_dat <- fread(paste0(outdir_dat, "/kpneu_plasmids.csv"), select = c("contig_id", "origin"))
 colnames(temp_plamsid_dat) = c("contig", "contig_origin")
 
 
@@ -66,9 +66,9 @@ pangenome_data  = merge(pangenome_data, temp_plamsid_dat,
                         all.x = TRUE, by = "contig")
 
 
-pangenome_data_chr <- pangenome_data[contig_origin!="Plasmid" & !is.na(gene_family)]
+pangenome_data_chr <- pangenome_data[contig_origin!="plasmid" & !is.na(gene_family)]
 
-pangenome_data_chr[, new_n_geno := .N, by = gene_family]
+pangenome_data_chr[, new_n_geno := uniqueN(geno_id), by = gene_family]
 
 
 

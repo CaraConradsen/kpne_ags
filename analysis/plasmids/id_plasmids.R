@@ -188,6 +188,18 @@ all_plas_dat[, plasmid_count := rowSums(.SD == "plasmid", na.rm = TRUE),
              .SDcols = c("molecule_type", "plcl_type", 
                          "pf_pred", "Prediction")]
 
+all_plas_dat[, origin := ifelse(molecule_type == "plasmid" & 
+                        (pf_pred == "plasmid" | plcl_type == "plasmid" | Prediction == "plasmid"),
+                      "plasmid", "chromosome")]
+
+# fix the one contig that has both mob-suite and pf, but not ml or plclass
+all_plas_dat[origin!="plasmid" & molecule_type == "plasmid" & pf_pred == "plasmid",
+             origin := "plasmid"]
 
 fwrite(all_plas_dat,
        paste0(outdir_dat, "/kpneu_plasmids.csv"))
+
+
+# all_plas_dat <- fread(paste0(outdir_dat, "/kpneu_plasmids.csv"))
+
+
