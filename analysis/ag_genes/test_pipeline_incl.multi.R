@@ -97,6 +97,8 @@ pangenome_data_chr = merge(pangenome_data_chr, temp_count[,.(gene_group, gene_fa
 # Inspect paralogs - 
 unique(pangenome_data_chr[para_rank > 1, .(product)]) %>% View()
 
+fwrite(pangenome_data_chr, paste0(outdir_dat, "/pangenome_data_chr.csv"))
+# pangenome_data_chr <- fread(paste0(outdir_dat, "/pangenome_data_chr.csv"))
 
 # Select fasta to estimate diversity on -----------------------------------
 
@@ -383,3 +385,46 @@ mtext(expression("E. Density distribution of average " * K[S]),
       line = 2, adj = -0.15, cex = 0.75)
 
 dev.off()
+
+
+
+# Looking at avgKs < 0.1 and threshold >95 --------------------------------
+layout(matrix(c(1:2), nrow = 1, ncol = 2, byrow = TRUE))
+
+low_vals = freq_plot_dat[threshold >= 95 & avg_ks <= 0.1]# & pan_grp != "soft-core"]
+
+# Density estimation
+dens <- kde2d(y = low_vals$avg_ks, x = low_vals$pan_freq, n = 50)
+max_den = round(max(dens$z))
+trunc_val = 100
+dens$z[dens$z > trunc_val] <- trunc_val # Cap values at 40
+# plot
+persp(dens, col = "lightblue",theta = 40, ticktype = "detailed", 
+      ltheta = 120,shade = 0.5, xlab = "Pangenome frequency",
+      zlim = c(0, trunc_val),
+      main = "",
+      zlab = "Density", ylab = "\u03C0S")
+mtext(paste0("A. all accessory genes \n(identity threshold \u2265 95%, \u03C0S \u2264 0.1, n = ", nrow(low_vals),")"),
+      line = 2, adj = -0.15)
+
+# no soft core
+low_vals = freq_plot_dat[threshold >= 95 & avg_ks <= 0.1 & pan_grp != "soft-core"]
+
+# Density estimation
+dens <- kde2d(y = low_vals$avg_ks, x = low_vals$pan_freq, n = 50)
+max_den = round(max(dens$z))
+trunc_val = 100
+dens$z[dens$z > trunc_val] <- trunc_val # Cap values at 40
+# plot
+persp(dens, col = "lightblue",theta = 40, ticktype = "detailed", 
+      ltheta = 120,shade = 0.5, xlab = "Pangenome frequency",
+      zlim = c(0, trunc_val),
+      main = "",
+      zlab = "Density", ylab = "\u03C0S")
+mtext(paste0("B. no soft-core genes \n(identity threshold \u2265 95%, \u03C0S \u2264 0.1, n = ", nrow(low_vals),")"),
+      line = 2, adj = -0.15)
+
+# only soft core
+low_vals = freq_plot_dat[threshold >= 95 & avg_ks <= 0.1 & pan_grp == "soft-core"]
+
+

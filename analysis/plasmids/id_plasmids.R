@@ -203,3 +203,9 @@ fwrite(all_plas_dat,
 # all_plas_dat <- fread(paste0(outdir_dat, "/kpneu_plasmids.csv"))
 
 
+# identify contigs to remove from gffs ------------------------------------
+plasmid_contigs <- all_plas_dat[origin=='plasmid', .(geno_id, contig_id)]
+plasmid_contigs[, geno_id:= paste0(geno_id, ".gff")] 
+
+write.table(plasmid_contigs, file = paste0(outdir_dat, "/plasmid_contigs.txt"),
+            quote = FALSE, sep = "\t", row.names = FALSE, col.names = FALSE)

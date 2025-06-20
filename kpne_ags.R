@@ -26,7 +26,7 @@ invisible(sapply(
 packages <- c("ape","Biostrings","BSgenome", "data.table","doParallel","dplyr","MASS", 
               "eulerr","foreach","GenomicRanges","ggplot2","ggtree","gUtils","ggnewscale",
               "ggiraph","htmlwidgets", "jsonlite","pegas", "phyloseq", "micropan","VennDiagram", 
-              "phytools","RColorBrewer","seqinr","stats","stringr","treeio", "vegan")
+              "phytools","RColorBrewer","rtracklayer", "seqinr","stats","stringr","treeio", "vegan")
 
 # load in functions, uses BiocManager::install which handles both 
 # CRAN and Bioconductor packages
