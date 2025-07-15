@@ -12,20 +12,20 @@
 # import vcf R scripts from the analysis subdirectory
 invisible(# removes verbose warnings
   AG_analysis <- list.files("./analysis/general", 
-                             full.names = T, 
+                             full.names = T,
+                            pattern ="load_packages.R",
                              recursive = T)) 
 invisible(sapply(
-  AG_analysis[!grepl("shell_scripts", # change this to the folder name to be ommited 
-                     AG_analysis)], 
+  AG_analysis, 
   source)
 )
 
 
 # Package dependencies
 # this function attaches libraries, but also checks and installs missing packages
-packages <- c("ape","Biostrings","BSgenome", "data.table","doParallel","dplyr","MASS", 
+packages <- c("ape","Biostrings","BSgenome", "data.table","doParallel","dplyr","MASS", "jsonlite",
               "eulerr","foreach","GenomicRanges","ggplot2","ggtree","gUtils","ggnewscale",
-              "ggiraph","htmlwidgets", "jsonlite","pegas", "phyloseq", "micropan","VennDiagram", 
+              "ggiraph","htmlwidgets","igraph", "jsonlite","pegas", "phyloseq", "micropan","VennDiagram", 
               "phytools","RColorBrewer","rtracklayer", "seqinr","stats","stringr","treeio", "vegan")
 
 # load in functions, uses BiocManager::install which handles both 
