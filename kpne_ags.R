@@ -20,17 +20,21 @@ invisible(sapply(
   source)
 )
 
-
+# library(remotes)
+# remotes::install_version("rlang", version = "1.1.2")
+# remotes::install_version("dplyr", version = "1.1.3")
 # Package dependencies
 # this function attaches libraries, but also checks and installs missing packages
-packages <- c("ape","Biostrings","BSgenome", "data.table","doParallel","dplyr","MASS", "jsonlite",
-              "eulerr","foreach","GenomicRanges","ggplot2","ggtree","gUtils","ggnewscale",
+packages <- c("ape","Biostrings","BSgenome", "doParallel","data.table", "MASS", "yyjsonr",
+              "eulerr","foreach","GenomicRanges","ggplot2","ggtree","gUtils","ggnewscale", "RCy3",
+              "mlplasmids","msaR","shape", "ade4", "genoPlotR",
               "ggiraph","htmlwidgets","igraph", "jsonlite","pegas", "phyloseq", "micropan","VennDiagram", 
               "phytools","RColorBrewer","rtracklayer", "seqinr","stats","stringr","treeio", "vegan")
 
 # load in functions, uses BiocManager::install which handles both 
 # CRAN and Bioconductor packages
 load_packages(packages)
+
 
 # set data.table threads
 setDTthreads(threads = detectCores()-2)
