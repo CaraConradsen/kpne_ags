@@ -4,8 +4,167 @@ msu_paths_dt <- fread(paste0(outdir_dat, "/msu_paths_dt.csv"))
 path_dt <- fread(paste0(outdir_dat, "/path_dt.csv"))
 pangraph_anno <- fread(paste0(outdir_dat, "/pangraph_anno.csv"))
 nodes_dt <- fread(paste0(outdir_dat, "/nodes_dt.csv"))
-msu_mergers_dt <- fread(paste0(outdir_dat, "msu_mergers_dt.csv"))
 
+msu_mergers_dt <- fread(paste0(outdir_dat, "msu_mergers_dt.csv")) # core block ids
+
+# parms
+# geno_ids
+geno_ids = unique(pangraph_anno$geno_id)
+
+# Get backbone for MSU_0 --------------------------------------------------
+
+msu_0_core_ids = msu_mergers_dt[msu_mergers=="MSU_0"]
+
+# Get graph nodes
+msu_0_core_nodes <- nodes_dt[block_id %chin% msu_0_core_ids$block_id]
+
+msu_0_region <- msu_0_core_nodes[, .(ST = unique(ST), 
+                                    start = min(start), 
+                                    end = max(end)),
+                                by = geno_id]
+
+setnames(msu_0_region, c("start","end"), c("region_start","region_end"))
+
+setkey(pangraph_anno, geno_id, ST, start, end)
+
+setkey(msu_0_region, geno_id, ST, region_start, region_end)
+
+res <- foverlaps(
+  x = pangraph_anno,
+  y = msu_0_region,
+  by.x = c("geno_id", "ST", "start", "end"),
+  by.y = c("geno_id", "ST", "region_start", "region_end"),
+  type = "within",
+  nomatch = 0L
+)
+
+res[, n := .N, gene_family]
+
+# get anchors in order
+anchors = res[n==93,.(geno_id, start, gene_family)]
+
+result <- anchors[
+  order(start),                                # sort within each group
+  .(gene_families = paste(gene_family, collapse = ", ")), 
+  by = geno_id
+]
+
+# Count occurrences and return the most frequent gene_families string
+mode_string <- result[
+  , .N, by = gene_families
+][order(-N)][1, gene_families]
+
+
+ordered_families <- data.table(
+  order = seq_len(length(strsplit(mode_string, ", ")[[1]])),
+  gene_family = strsplit(mode_string, ", ")[[1]]
+)
+
+ordered_families[, anchor:= paste0("A", order)]
+
+syn_blocks <- lapply(seq_len(nrow(ordered_families) - 1), function(i) {
+  
+  focal_gene_fams <- ordered_families[i:(i+1), gene_family]
+  anchor_names    <- paste(ordered_families[i:(i+1), anchor], collapse = ":")
+  
+  between_genes <- res[
+    , {
+      idx <- which(gene_family %in% focal_gene_fams)
+      
+      # Require exactly two anchors per geno_id
+      if (length(idx) == 2L) {
+        
+        first_pos  <- idx[1]
+        second_pos <- idx[2]
+        forward <- first_pos < second_pos
+        
+        if (forward) {
+          i1 <- first_pos
+          i2 <- second_pos
+          block <- .SD[(i1+1):(i2-1)]
+        } else {
+          i1 <- second_pos
+          i2 <- first_pos
+          block <- .SD[(i1+1):(i2-1)]
+          if (nrow(block) > 0L) {
+            block <- block[.N:1]    # reverse orientation
+          }
+        }
+        
+        block
+        
+      } else {
+        NULL
+      }
+    },
+    by = geno_id
+  ]
+  
+  between_genes[, anchor := anchor_names]
+  between_genes[, .(locus_tag, anchor)]
+})
+
+
+
+syn_blocks <- rbindlist(syn_blocks)
+
+# # fix trails
+# first_fam <- ordered_families[1, gene_family]
+# last_fam  <- ordered_families[.N, gene_family]
+# 
+# first_anchor_name <- paste0(":", ordered_families[1, anchor])
+# last_anchor_name  <- paste0(ordered_families[.N, anchor], ":")
+# 
+# # leading block
+# leading_block <- res[
+#   , {
+#     idx <- which(gene_family == first_fam)
+#     if (length(idx) == 1L && idx > 1L) {
+#       .SD[1:(idx - 1)]
+#     } else NULL
+#   },
+#   by = geno_id
+# ][, .(locus_tag)]
+# 
+# if (nrow(leading_block) > 0){
+#   leading_block[, anchor := first_anchor_name]
+# }
+# 
+# # lagging block
+# lagging_block <- res[
+#   , {
+#     idx <- which(gene_family == last_fam)
+#     if (length(idx) == 1L && idx < .N) {
+#       .SD[(idx + 1):.N]
+#     } else NULL
+#   },
+#   by = geno_id
+# ][, .(locus_tag)]
+# 
+# if (nrow(lagging_block) > 0){
+#   lagging_block[, anchor := last_anchor_name]
+# }
+  
+# add anchors
+
+syn_blocks <- rbind(#leading_block,
+                    syn_blocks,
+                    #lagging_block,
+                    merge(ordered_families[,.(gene_family, anchor)], 
+                          pangraph_anno[, .(gene_family, locus_tag)],
+                          all.x = TRUE, by = "gene_family")[,.(locus_tag, anchor)])
+
+syn_blocks[, n := .N, locus_tag]
+
+msu_anchors = rbind(syn_blocks[n==1][,.(locus_tag, anchor)],
+                    syn_blocks[n>1 & !grepl(":", anchor)][,.(locus_tag, anchor)])
+
+
+msu_anchors_anno <- merge(res[, !c("region_start", "region_end", "n")], 
+                          msu_anchors, 
+                          all.x = TRUE, by = "locus_tag")
+
+# SPARK_121_C2
 
 # MSU maintain core gene rank order ---------------------------------------
 
