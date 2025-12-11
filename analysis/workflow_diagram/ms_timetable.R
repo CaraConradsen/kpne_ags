@@ -87,9 +87,12 @@ for(i in 1:nrow(project_blocks)){
   
   
   # Add day number in top-right corner
+  rect_width = 0.5 
+    margin =  0.01
+  
   day_num <- format(day, "%d")
   if (period=="AM"){
-    text(x=wday + rect_width - margin, y=ytop - margin,
+    text(x=wday + rect_width - margin, y=ytop + 0.35,
        labels=day_num, cex=0.6, adj=c(1,-8))
     }
 

@@ -931,6 +931,31 @@ text(mids, rep(2, 3)+ height/2,
      srt = 45)
 
 
+# dotplots ----------------------------------------------------------------
+# consensus "ST23-1LV"
+focal_ST = c("ST23-1LV","ST2703","ST86","ST268","ST3586",
+             "ST37-1LV","ST11","ST258","ST258-1LV","ST405-1LV")
+
+# run dotplots in python
+# variables
+str_i <- "ST23-1LV"
+str_j <- "ST2703"
+output_dir <- "/mnt/c/Users/carac/Dropbox/Vos_Lab/kpne_ags/output/figures"
+
+file_dir <- "/mnt/c/Users/carac/Dropbox/Vos_Lab/kpne_ags/input_data/test_pangraph"
+py_script <- "/mnt/c/Users/carac/Dropbox/Vos_Lab/kpne_ags/analysis/python/dotplot.py"
+
+# Construct WSL command
+cmd_dotplots_py <- paste(
+  "wsl",
+  "cd", file_dir, "&&",
+  "/home/carac/anaconda3/bin/python", py_script,
+  str_i, str_j, output_dir
+)
+
+# Run it
+system(cmd_dotplots_py)
+
 
 # # ancestral reconstruction ------------------------------------------------
 # tree <- read.tree("./input_data/test_pangraph/gub_graph.final_tree.tre")
