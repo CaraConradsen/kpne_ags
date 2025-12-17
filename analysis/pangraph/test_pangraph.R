@@ -406,7 +406,7 @@ path_dt <- merge(path_dt, ST_labels, all.x=TRUE, by ="geno_id")
 
 # Get cds_gff
 pangraph_anno <- merge(cds_fasta_gff_dt, 
-                       pan_anno[,.(geno_id, locus_tag, gene, product, COG_ortho_grp, ST)],
+                       pan_anno[,.(geno_id, locus_tag, gene, product, COG_funct_cat,KEGG, ST)],
                        all.x = TRUE, by =c("geno_id", "locus_tag"))
 
 

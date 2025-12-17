@@ -27,7 +27,7 @@ invisible(sapply(
 # this function attaches libraries, but also checks and installs missing packages
 packages <- c("ape","Biostrings","BSgenome", "doParallel","data.table", "MASS", "yyjsonr",
               "eulerr","foreach","GenomicRanges","ggplot2","ggtree","gUtils","ggnewscale", "RCy3",
-              "mlplasmids","msaR","shape", "ade4", "genoPlotR","MASS",
+              "mlplasmids","msaR","shape", "ade4", "genoPlotR","MASS","phangorn",
               "ggiraph","htmlwidgets","igraph", "jsonlite","pegas", "phyloseq", "micropan","VennDiagram", 
               "phytools","RColorBrewer","rtracklayer", "seqinr","stats","stringr","treeio", "vegan")
 

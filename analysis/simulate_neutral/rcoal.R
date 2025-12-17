@@ -60,28 +60,16 @@ simulate_freq_vs_diversity <- function(n_genomes, n_trees, seed = 42, num_core =
   return(results)
 }
 
+
+# Global variables --------------------------------------------------------
+tot_pangenome_size = 93
+n_sim_trees = 10000
+
 # Example run (adjust n_tips, n_trees to taste; beware runtime if n_trees large)
-res <- simulate_freq_vs_diversity(n_genomes = 93, n_trees = 50)
+res <- simulate_freq_vs_diversity(n_genomes = tot_pangenome_size, n_trees = n_sim_trees)
 
-
-
-
-# Base-R plot: frequency vs subtree_br_len (scatter + LOWESS smooth)
-# jitter freq slightly for visualization
-plot(res$freq/93,res$subtree_br_len,  #jitter(res$freq, amount = 0.2),
-     xlab = "Accessory gene frequency",
-     bty = "l", yaxt = "n",
-     col = rgb(0.25,0.25,0.8, alpha = 0.5),
-     ylab = "Subtree total branch length (Age 4N generations)",
-     main = "Accessory gene frequency vs subtree length",
-     pch = 19, cex = 0.6)
-
-axis(side = 2, at = pretty(c(0, max(res$subtree_br_len))),
-     las = 2, labels = pretty(c(0, max(res$subtree_br_len))))
-
-# axis(side = 2, at = pretty(c(0, max(res$freq))),
-#      las = 2, labels = pretty(c(0, max(res$freq))))
-
+# Normalise/scaled results by mean freq subtree_br_len
+res[, t_hat := subtree_br_len/mean(subtree_br_len), freq]
 
 # Scale trees -------------------------------------------------------------
 # THERE ARE MISSING GENE FAMILY ALIGNMENTS???
@@ -96,50 +84,92 @@ focal_gene_families =  c(focal_gene_families[!grepl("_", focal_gene_families)],
 
 gene_align_loc = "C:/Users/carac/Dropbox/Vos_Lab/kpne_ags/input_data/PIRATE_485_lng_rds_out/feature_sequences/"
 
-ag_seg_sites = lapply(focal_gene_families, function(i) {
+# Set up parallel backend
+cl <- makeCluster(num_cores)
+registerDoParallel(cl)
+
+# Parallel foreach loop
+ag_seg_sites <- foreach(i = focal_gene_families, 
+                        .combine = rbind, 
+                        .packages = c("Biostrings","ape","pegas","data.table")) %dopar% {
   
-  # --- Try reading the FASTA (skip if missing) ---
+  # Read the FASTA, skip if missing
   temp_string <- tryCatch(
     readDNAStringSet(paste0(gene_align_loc, i, ".nucleotide.fasta")),
     error = function(e) return(NULL)
   )
   
-  # If file missing → skip
+  # skip if file is missing
   if (is.null(temp_string)) return(NULL)
   
-  # --- Subset to loci present in pangraph annotation ---
+  #  Subset to loci present in pangraph annotation
   sampled_loci = pangraph_anno[gene_family == i, locus_tag]
   
-  # Subset by sequence names; avoid errors if some names not found
+  # Subset by sequence names
   temp_string <- temp_string[names(temp_string) %in% sampled_loci]
   
-  # Skip if 
+  # Skip if no sequence, ORFan or core gene
   if (length(temp_string) == 0) return(NULL)
-  if (length(temp_string) %in% c(1, 93)) return(NULL)
+  if (length(temp_string) %in% c(1, tot_pangenome_size)) return(NULL)
   
-  # --- Compute gene length and frequency ---
+  # Compute gene length and frequency 
   gene_len = width(temp_string)[1]
   freq = length(temp_string)
   
-  # --- Convert to DNAbin ---
+  # Convert to DNAbin
   dna_bin <- as.DNAbin(temp_string)
   
-  # --- Compute segregating sites ---
-  segpos <- seg.sites(dna_bin)
-  S <- length(segpos)
+  # Calculate segregating sites 
+  seg_site <- seg.sites(dna_bin)
+  S <- length(seg_site)
   
   data.frame(
     gene_family = i,
-    gene_len = gene_len,
+    m = gene_len,
     freq = freq,
     S = S
   )
-})
+}
 
-ag_seg_sites = rbindlist(ag_seg_sites)
+# Stop cluster when done
+stopCluster(cl)
 
-ag_seg_sites[, .(mean_S = mean(S)), by = freq]
+setDT(ag_seg_sites)
+
+# Calculate segregating site per site
+ag_seg_sites[, Sm := S / m]
+
+# Calculate empirical mean for frequency class k
+pi_emp_k = ag_seg_sites[, .(mean_Sm = mean(Sm)), by = freq]
 
 
 
+# Anchor genealogy estimates by empirical means ---------------------------
 
+# Join pi_emp_k onto res by freq and create new column
+res[pi_emp_k, on = "freq", pi_sim := t_hat * mean_Sm]
+
+
+# Simulated frequency vs pi_sim 
+plot(res$freq/tot_pangenome_size,res$pi_sim, 
+     xlab = "Accessory gene frequency",
+     bty = "l", yaxt = "n",
+     col = rgb(0.25,0.25,0.8, alpha = 0.5),
+     ylab = "Simulated pi",
+     main = paste0("Neutral distribution,\nn = ",n_sim_trees,
+                   ", pangenome = ",tot_pangenome_size),
+     pch = 19, cex = 0.6)
+
+axis(side = 2, at = pretty(c(0, max(res$pi_sim, na.rm = TRUE))),
+     las = 2, labels = pretty(c(0, max(res$pi_sim, na.rm = TRUE))))
+
+
+# Outlier detections: summarise the neutral distribution per frequency --------
+
+neutral_summary <- res[, .(
+  pi_lower = quantile(pi_sim, 0.025, na.rm = TRUE),
+  pi_median = median(pi_sim, na.rm = TRUE),
+  pi_upper = quantile(pi_sim, 0.975, na.rm = TRUE)
+), by = freq]
+
+# fwrite(neutral_summary, paste0(outdir_dat, "/neutral_summary.csv"))
