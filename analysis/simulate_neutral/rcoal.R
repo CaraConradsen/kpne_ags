@@ -63,7 +63,7 @@ simulate_freq_vs_diversity <- function(n_genomes, n_trees, seed = 42, num_core =
 
 # Global variables --------------------------------------------------------
 tot_pangenome_size = 93
-n_sim_trees = 10000
+n_sim_trees = 50
 
 # Example run (adjust n_tips, n_trees to taste; beware runtime if n_trees large)
 res <- simulate_freq_vs_diversity(n_genomes = tot_pangenome_size, n_trees = n_sim_trees)
@@ -150,26 +150,27 @@ pi_emp_k = ag_seg_sites[, .(mean_Sm = mean(Sm)), by = freq]
 res[pi_emp_k, on = "freq", pi_sim := t_hat * mean_Sm]
 
 
-# Simulated frequency vs pi_sim 
-plot(res$freq/tot_pangenome_size,res$pi_sim, 
-     xlab = "Accessory gene frequency",
-     bty = "l", yaxt = "n",
-     col = rgb(0.25,0.25,0.8, alpha = 0.5),
-     ylab = "Simulated pi",
-     main = paste0("Neutral distribution,\nn = ",n_sim_trees,
-                   ", pangenome = ",tot_pangenome_size),
-     pch = 19, cex = 0.6)
-
-axis(side = 2, at = pretty(c(0, max(res$pi_sim, na.rm = TRUE))),
-     las = 2, labels = pretty(c(0, max(res$pi_sim, na.rm = TRUE))))
-
+# # Simulated frequency vs pi_sim 
+# plot(res$freq/tot_pangenome_size,res$pi_sim, 
+#      xlab = "Accessory gene frequency",
+#      bty = "l", yaxt = "n",
+#      col = rgb(0.25,0.25,0.8, alpha = 0.5),
+#      ylab = "Simulated pi",
+#      main = paste0("Neutral distribution,\nn = ",n_sim_trees,
+#                    ", pangenome = ",tot_pangenome_size),
+#      pch = 19, cex = 0.6)
+# 
+# axis(side = 2, at = pretty(c(0, max(res$pi_sim, na.rm = TRUE))),
+#      las = 2, labels = pretty(c(0, max(res$pi_sim, na.rm = TRUE))))
+# 
 
 # Outlier detections: summarise the neutral distribution per frequency --------
 
 neutral_summary <- res[, .(
   pi_lower = quantile(pi_sim, 0.025, na.rm = TRUE),
   pi_median = median(pi_sim, na.rm = TRUE),
-  pi_upper = quantile(pi_sim, 0.975, na.rm = TRUE)
+  pi_upper = quantile(pi_sim, 0.975, na.rm = TRUE),
+  iqr = IQR(pi_sim, na.rm = TRUE, type = 7)
 ), by = freq]
 
-# fwrite(neutral_summary, paste0(outdir_dat, "/neutral_summary.csv"))
+fwrite(neutral_summary, paste0(outdir_dat, "/neutral_summary.csv"))

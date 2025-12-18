@@ -13,7 +13,7 @@
 invisible(# removes verbose warnings
   AG_analysis <- list.files("./analysis/general", 
                              full.names = T,
-                            pattern ="load_packages.R",
+                            pattern =".R",
                              recursive = T)) 
 invisible(sapply(
   AG_analysis, 
@@ -29,7 +29,8 @@ packages <- c("ape","Biostrings","BSgenome", "doParallel","data.table", "MASS", 
               "eulerr","foreach","GenomicRanges","ggplot2","ggtree","gUtils","ggnewscale", "RCy3",
               "mlplasmids","msaR","shape", "ade4", "genoPlotR","MASS","phangorn",
               "ggiraph","htmlwidgets","igraph", "jsonlite","pegas", "phyloseq", "micropan","VennDiagram", 
-              "phytools","RColorBrewer","rtracklayer", "seqinr","stats","stringr","treeio", "vegan")
+              "phytools","RColorBrewer","rtracklayer", "seqinr","stats","stringr","treeio", "vegan",
+              "vioplot", "homoplasyFinder")
 
 # load in functions, uses BiocManager::install which handles both 
 # CRAN and Bioconductor packages
