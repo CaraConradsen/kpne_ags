@@ -5,14 +5,20 @@
 
 pangraph_anno <- fread(paste0(outdir_dat,"/pangraph_anno.csv"))
 
-list_unique_ags = unique(pangraph_anno[ag_type!="core", gene_family]) 
+temp_pangraph_anno <- copy(pangraph_anno)
+
+temp_pangraph_anno[, n:=.N, gene_family]
+
+temp_pangraph_anno <- temp_pangraph_anno[n!=1]
+
+list_unique_ags = unique(temp_pangraph_anno[ag_type!="core", gene_family]) 
 
 # remove paralogs (retain genes with only _1 or no underscore)
 
 list_unique_ags = c(grep("_", list_unique_ags, invert = TRUE, value = TRUE),
                     grep("_1", list_unique_ags, value = TRUE))# 14,330 ags
 
-# numer of genomes in pangenome
+# number of genomes in pangenome
 tot_pangenome_size = length(unique(pangraph_anno$geno_id))
 
 # loop
