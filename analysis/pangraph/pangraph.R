@@ -26,18 +26,19 @@ correct_start <- pan_anno[gene=="dnaA" & strand == "+" &
                           .(geno_id, ST)]
 
 setorderv(correct_start, cols = "geno_id")
-correct_start_unique <- correct_start[, .SD[1], by = ST]# subset taking first ST
 
+# take 2-5 genomes per ST (30 STs)
+correct_start[,n := .N, ST]
+correct_start_unique <- correct_start[n!=1, .SD[1:5], by = ST][!is.na(geno_id)]# subset taking first 5 STs
 
-
-geno_list = correct_start_unique[,geno_id]# 93 genomes
+geno_list = correct_start_unique[,geno_id]# 115 genomes
 
 # get fasta files
 
 lng_rd_fasta_files = list.files("./input_data/kpne_485_fasta/",
                                 full.names = TRUE)# take first 10 for now
 
-pangraph_dir =  "./input_data/test_pangraph/"
+pangraph_dir =  "./input_data/pangraph/"
 
 chr_contigs <- unique(fread(paste0(outdir_dat, "/all_pirate_anno_cogs.csv"),
                      select = c("seqnames", "asmbly_type")))
@@ -170,10 +171,10 @@ cds_fasta_gff_dt[, n := NULL]
 
 pangraph_path = "/home/carac/anaconda3/bin/pangraph" # pangraph program dir 
 threads = 18 # Number of threads
-min_length = 1300 #round(min_gene_length, digits = -1) # min block size in bp
+min_length = round(min_gene_length, digits = -1) # min block size in bp
 circular_flag = "--circular"   # or "" if not circular
-input_dir = "/mnt/c/Users/carac/Dropbox/Vos_Lab/kpne_ags/input_data/test_pangraph"# input folder dir
-output_file = file.path(input_dir, paste0("graph_s",min_length,".json"))# output file dir
+input_dir = "/mnt/c/Users/carac/Dropbox/Vos_Lab/kpne_ags/input_data/pangraph"# input folder dir
+output_file = file.path(input_dir, paste0("graph.json"))# output file dir
 kern_sens = "-k minimap2 -s 20"# alignment sensitivity
 beta_diversity = "-b 5"# energy cost for diversity alignment
 
@@ -192,21 +193,7 @@ cmd_pangraph <- sprintf(
 
 # check command
 cat("Running command:\n", cmd_pangraph, "\n\n")
-# for 1500:
-# 2025-10-28 09:47:43.548 [W] align.rs:66: In nucleotide alignment (qry len: 3425, ref len: 3420, shift: 0, bandwidth: 40): still hitting the band boundary after 4 attempts. Returning last attempt with score: 7284
-# [1] 0
 
-# The application panicked (crashed).
-# Message:  assertion `left == right` failed
-# left: 3813
-# right: 3812
-# Location: packages/pangraph/src/align/nextclade/analyze/nuc_changes.rs:19
-# 
-# If you think it's a bug, consider reporting at: 'https://github.com/neherlab/pangraph/issues'
-# 
-# Backtrace omitted. Run with RUST_BACKTRACE=1 environment variable to display it.
-# Run with RUST_BACKTRACE=full to include source snippets.
-# [1] 134
 
 start <- Sys.time()# Start timer
 
@@ -218,6 +205,7 @@ print(end - start) # Print runtime
 # 10 seqs Time difference of 0.58 mins
 # 25 seqs Time difference of 2.177748 mins
 # 93 seqs Time difference of 11.95702 mins
+# 115 seqs Time difference of 13.96003 mins
 
 # 2. ### Generate clonalframe for trees using pangraph and gubbins
 
@@ -238,15 +226,8 @@ cmd_core <- sprintf(
 # check command
 cat("Running command:\n", cmd_core, "\n\n")
 
-
-start <- Sys.time()# Start timer
-
 # run pangraph 
 system(cmd_core)
-
-end <- Sys.time()# End timer
-print(end - start) # Print runtime
-
 
 
 # 3. ### get clean clonal frame with gubbins (in future maybe try STs?)
@@ -256,9 +237,9 @@ conda_env = "gubbins_env" # conda environment name
 threads = 12 # number of threads
 tree_method = "fasttree" # tree builder to use
 # input alignment file (from pangraph output)
-input_alignment = "/mnt/c/Users/carac/Dropbox/Vos_Lab/kpne_ags/input_data/test_pangraph/core_genome_aln.fa"
+input_alignment = "/mnt/c/Users/carac/Dropbox/Vos_Lab/kpne_ags/input_data/pangraph/core_genome_aln.fa"
 # output prefix 
-output_prefix = "/mnt/c/Users/carac/Dropbox/Vos_Lab/kpne_ags/input_data/test_pangraph/gub_graph"
+output_prefix = "/mnt/c/Users/carac/Dropbox/Vos_Lab/kpne_ags/input_data/pangraph/gub_graph"
 
 # build gubbins command string 
 cmd_gubbins <- sprintf(
@@ -284,11 +265,12 @@ print(end - start) # Print runtime
 # 10 seqs Time difference of 1.921924 mins
 # 25 seqs Time difference of 2.211768 mins
 # 93 seqs Time difference of 25.72868 mins
+# 115 seqs Time difference of 25.72868 mins
 
 # Import json -------------------------------------------------------------
 # # Read from a local file
 
-pangraph_data <- yyjsonr::read_json_file("./input_data/test_pangraph/graph.json",
+pangraph_data <- yyjsonr::read_json_file("./input_data/pangraph/graph.json",
                                          int64 = "string"
 )
 
@@ -344,7 +326,7 @@ core_dt <- nodes_dt[count == n_strains & n_strains == max_genomes,]
 # Plot Core MSU order ---------------------------------------------------------------
 
 # Left panel: Phylogenetic tree 
-core_gub_tree <- read.tree("./input_data/test_pangraph/gub_graph.node_labelled.final_tree.tre") 
+core_gub_tree <- read.tree("./input_data/pangraph/gub_graph.node_labelled.final_tree.tre") 
 
 ST_labels <- unique(pan_anno[geno_id %chin% core_gub_tree$tip.label,
                             .(geno_id, ST)])
@@ -357,7 +339,7 @@ core_gub_tree$tip.label <- ST_labels$ST
 
 # run msu in python
 
-file_dir = "/mnt/c/Users/carac/Dropbox/Vos_Lab/kpne_ags/input_data/test_pangraph"
+file_dir = "/mnt/c/Users/carac/Dropbox/Vos_Lab/kpne_ags/input_data/pangraph"
 py_script = "/mnt/c/Users/carac/Dropbox/Vos_Lab/kpne_ags/analysis/python/find_msu.py"
 
 # Construct the WSL command
@@ -371,11 +353,11 @@ cmd_msu_py <- paste(
 system(cmd_msu_py)
 
 # Import data
-MSU_mergers <- yyjsonr::read_json_file("./input_data/test_pangraph/MSU_mergers.json",
+MSU_mergers <- yyjsonr::read_json_file("./input_data/pangraph/MSU_mergers.json",
                                        int64 = "string")
-MSU_paths <- yyjsonr::read_json_file("./input_data/test_pangraph/MSU_paths.json",
+MSU_paths <- yyjsonr::read_json_file("./input_data/pangraph/MSU_paths.json",
                                      int64 = "string")
-MSU_len <- yyjsonr::read_json_file("./input_data/test_pangraph/MSU_len.json",
+MSU_len <- yyjsonr::read_json_file("./input_data/pangraph/MSU_len.json",
                                    int64 = "string")
                                                                                                                
 # Extract MSU data --------------------------------
@@ -942,7 +924,7 @@ str_i <- "ST23-1LV"
 str_j <- "ST2703"
 output_dir <- "/mnt/c/Users/carac/Dropbox/Vos_Lab/kpne_ags/output/figures"
 
-file_dir <- "/mnt/c/Users/carac/Dropbox/Vos_Lab/kpne_ags/input_data/test_pangraph"
+file_dir <- "/mnt/c/Users/carac/Dropbox/Vos_Lab/kpne_ags/input_data/pangraph"
 py_script <- "/mnt/c/Users/carac/Dropbox/Vos_Lab/kpne_ags/analysis/python/dotplot.py"
 
 # Construct WSL command
@@ -958,7 +940,7 @@ system(cmd_dotplots_py)
 
 
 # # ancestral reconstruction ------------------------------------------------
-# tree <- read.tree("./input_data/test_pangraph/gub_graph.final_tree.tre")
+# tree <- read.tree("./input_data/pangraph/gub_graph.final_tree.tre")
 # P <- read.table("./input_data/PIRATE_485_lng_rds_out/pres_abs_file.tsv", header=TRUE, row.names=1)
 # row.names(P) = sub("_[0-9]+$", "", row.names(P))
 # P <- P[tree$tip.label]
