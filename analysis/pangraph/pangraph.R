@@ -27,11 +27,15 @@ correct_start <- pan_anno[gene=="dnaA" & strand == "+" &
 
 setorderv(correct_start, cols = "geno_id")
 
-# take 2-5 genomes per ST (30 STs)
-correct_start[,n := .N, ST]
-correct_start_unique <- correct_start[n!=1, .SD[1:5], by = ST][!is.na(geno_id)]# subset taking first 5 STs
+# # take 2-5 genomes per ST (30 STs)
+# correct_start[,n := .N, ST]
+# correct_start_unique <- correct_start[n!=1, .SD[1:5], by = ST][!is.na(geno_id)]# subset taking first 5 STs
+# 
+# geno_list = correct_start_unique[,geno_id]# 115 genomes
 
-geno_list = correct_start_unique[,geno_id]# 115 genomes
+# no clones (mash > 2e-05)
+
+geno_list = fread(paste0(outdir_dat, "/st_no_clones_mash2e-05.csv"))[,genomes]# 214 genomes
 
 # get fasta files
 
