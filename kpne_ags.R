@@ -1,5 +1,5 @@
 # ########################################################## ####
-# AG introductions in KLEBSIELLA                              ####
+# Selection on AG in KLEBSIELLA                              ####
 # Author:    Cara Conradsen                                  ####
 # ########################################################## ####
 

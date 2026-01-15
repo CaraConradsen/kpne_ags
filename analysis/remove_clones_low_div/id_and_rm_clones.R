@@ -24,28 +24,8 @@ unique(panx_sa_ST)[,n] %>% hist(col = "firebrick2",
                                 breaks = max(panx_sa_ST$n))
 mtext("ST sampling for PanX genomes", side = 3, outer = TRUE)
 
-# Find the good lng reads (staring with dnaA) -----------------------------
-# and remove plasmids
-# save fastas for fastani & clone detection
-
 # set set
 set.seed(42)
-
-# pangenome info
-data_dir = "./input_data/PIRATE_485_lng_rds_out/"
-
-# map loci
-gene_families = fread(paste0(data_dir, "/PIRATE.gene_families.ordered.tsv"))
-colnames = colnames(gene_families)[c(1:2, 23:ncol(gene_families))]
-gene_families = gene_families[,..colnames]
-
-gene_families = melt(gene_families, id.vars = c("allele_name", "gene_family"),
-                     variable.name = "geno_id", value.name = "locus_tag")
-
-setDT(gene_families)
-
-gene_families <- gene_families[locus_tag!=""]
-
 
 # Retain only correct oriented chromosomes --------------------------------
 # 328 genomes
@@ -58,13 +38,6 @@ setorderv(correct_start, cols = "geno_id")
 
 geno_list = correct_start[,geno_id]# 328 genomes
 
-# get fasta files
-
-lng_rd_fasta_files = list.files("./input_data/kpne_485_fasta/",
-                                full.names = TRUE)# take first 10 for now
-
-pangraph_dir =  "./input_data/pangraph/"
-
 chr_contigs <- unique(fread(paste0(outdir_dat, "/all_pirate_anno_cogs.csv"),
                             select = c("seqnames", "asmbly_type")))
 
@@ -72,7 +45,7 @@ chr_contigs <- unique(fread(paste0(outdir_dat, "/all_pirate_anno_cogs.csv"),
 chr_contigs <- chr_contigs[asmbly_type!="plasmid"][,asmbly_type:=NULL]
 
 
-# Export focal chromosomal fasta ------------------------------------------
+# Export focal chromosomal fasta for mash & ANI------------------------------------------
 
 for (i in geno_list) {
   full_fasta <- readDNAStringSet(lng_rd_fasta_files[grepl(i,lng_rd_fasta_files)])
@@ -199,3 +172,122 @@ fwrite(rep_genos[,.(genomes)],
 #      labels = "Mash Distance")
 # abline(h = mash_threshold, col = "red", lty = 2)
 # text(15, 0.00002,"< 2e-05", pos = 3, col = "red")
+
+
+# Use mash against all genomes --------------------------------------------
+min(mash_dist$V3[mash_dist$V3!=0])# equals 2.38274e-05
+
+mash_threshold = 2e-05
+
+mash_dat <- dcast(mash_dist,
+                  V1~V2, 
+                  value.var = "V3",
+                  drop = TRUE)
+
+mash_mat <- as.matrix(mash_dat[,-1])
+
+row.names(mash_mat) = mash_dat$V1
+
+
+hc_all <- hclust(as.dist(mash_mat), method = "average")
+
+# visulaise dendogram
+par(mar = c(4,5,4,2))
+plot(hc_all, cex = 0.5, labels = FALSE,
+     xlab = "", ylab = "",
+     yaxt = "n",xaxt = "n",
+     main = "Cluster Dendrogram")
+
+axis(side = 2, at = seq(0,0.012, length.out = 7), las = 2,
+     labels = sprintf("%1.3f", seq(0,0.012, length.out = 7)))
+
+axis(side = 2, at = 0.006, line = 3, 
+     labels = "Cluster merge height (average Mash distance)",
+     tick = FALSE)
+
+axis(side = 1, at = 164, cex = 10,
+     line = -1.75,
+     labels = "Genomes",
+     tick = FALSE)
+
+# add ST points
+
+hang_height = max(hc_all$height) * 0.1
+
+n <- length(hc_all$labels)
+
+# For each leaf, find the height of its first merge
+terminal_height <- sapply(seq_len(n), function(i) {
+  min(hc_all$height[hc_all$merge[,1] == -i | hc_all$merge[,2] == -i])
+})
+
+terminal_height = terminal_height - hang_height
+
+# X positions from plotting order
+x_pos <- match(seq_len(n), hc_all$order)
+
+# create data.table
+all_hc_plot_dat <- data.frame(x_pos = x_pos, y_pos = terminal_height,
+                              geno_id = hc_all$labels)
+setDT(all_hc_plot_dat)
+
+all_hc_plot_dat <- merge(all_hc_plot_dat, ST_grps, 
+                         by = "geno_id")
+
+plot_cols = sort(unique(all_hc_plot_dat[n_brd>1, ST]))
+
+plot_cols = cbind(plot_cols, 
+                  rainbow(length(plot_cols)))
+colnames(plot_cols) = c("ST", "col")
+
+all_hc_plot_dat <- merge(all_hc_plot_dat, plot_cols, 
+                         all.x = TRUE, by = "ST")
+
+all_hc_plot_dat[is.na(col), col := "black"]
+
+# Plot dendrogram and overlay points
+with(all_hc_plot_dat, 
+     points(x_pos, y_pos, 
+            pch = 16, cex = 0.8,
+            col = col)
+)
+
+abline(h = mash_threshold, col = "red", lty = 2)
+text(332, 0.00002,"< 2e-05", pos = 3, col = "red", xpd=TRUE)
+
+# add legend
+plot_info = unique(all_hc_plot_dat[col!="black", .(ST, col)])
+with(plot_info[1:11,],
+     legend(60, -0.002, legend = ST, col = col,
+            x.intersp = 0.4,
+            bty="n", horiz = TRUE,cex = 0.6,
+            pch = 16, xpd = TRUE))
+with(plot_info[12:22,],
+     legend(60, -0.00225, legend = ST, col = col,
+            x.intersp = 0.4,
+            bty="n", horiz = TRUE,cex = 0.6,
+            pch = 16, xpd = TRUE))
+with(plot_info[23:31,],
+     legend(60, -0.0025, legend = ST, col = col,
+            x.intersp = 0.4,
+            bty="n", horiz = TRUE,cex = 0.6,
+            pch = 16, xpd = TRUE))
+text(50, -0.0025,"ST (n>1)", xpd = TRUE)
+
+# cut clones
+clusters <- cutree(hc_all, h = mash_threshold)
+
+# Get unique cluster IDs
+unique_clusters <- unique(clusters)
+
+# Sample one genome per cluster
+representatives <- sapply(unique_clusters, function(clust_id) {
+  genomes_in_cluster <- names(clusters)[clusters == clust_id]
+  sample(genomes_in_cluster, 1)
+})
+
+write(representatives,
+       paste0(outdir_dat, "/all_no_clones_mash2e-05.csv"))
+
+
+

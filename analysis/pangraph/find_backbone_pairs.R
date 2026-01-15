@@ -222,4 +222,4 @@ msu_regions_anchored <- foreach(msu = all_msu_nums[-1],
 stopCluster(cl)
 
 
-# fwrite(msu_regions_anchored, paste0(outdir_tab, "/msu_regions_anchored.csv"))
+fwrite(msu_regions_anchored, paste0(outdir_tab, "/msu_regions_anchored.csv"))
