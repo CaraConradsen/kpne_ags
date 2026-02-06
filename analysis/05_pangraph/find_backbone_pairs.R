@@ -15,27 +15,20 @@ all_msu_nums = unique(msu_mergers_dt$msu_mergers)
 
 # Get backbone for MSUs --------------------------------------------------
 
-anchor_msu_regions <- function(
-    msu_num,
-    msu_mergers_dt,
-    pangraph_anno,
-    nodes_dt
-){
+# make ori-spanning region continuous
+linearize_ori_intervals<- function(msu_dat, id = "node"){
   
-  msu_x_core_ids = msu_mergers_dt[msu_mergers== msu_num]
+  # set general variables
+  min_val = min(msu_dat$start, msu_dat$end, na.rm = TRUE)
+
+  col_order = colnames(msu_dat)
   
-  # Get graph nodes
-  msu_x_core_nodes <- nodes_dt[block_id %chin% msu_x_core_ids$block_id]
+  # Circular msus are split
+  circular_msus <- msu_dat[start > end]
   
-  # detect origin spanning genes
-  if(nrow(msu_x_core_nodes[start > end]) != 0){
-    
-    # Circular msus are split
-    circular_msus <- msu_x_core_nodes[start > end]
-    
-  
+  if(id == "node"){  
     # non-circular msus stay as-is
-    linear_msus <- msu_x_core_nodes[!node_id %chin% circular_msus$node_id]
+    linear_msus <- msu_dat[!node_id %chin% circular_msus$node_id]
     
     # Split into two intervals
     split_msus <- rbind(
@@ -51,16 +44,84 @@ anchor_msu_regions <- function(
       circular_msus[, .(
         geno_id, path_id, node_id, 
         block_id, strand, 
-        start = 0, 
+        start = min_val, 
         end, 
         tot_len, ST 
       )]
-    )
+    ) 
     
-    split_msus <- split_msus[end != 0]
+    split_msus <- split_msus[end != min_val]
     
-    # Combine back with linear MSUs
-    msu_x_core_nodes <- rbindlist(list(linear_msus, split_msus), use.names = TRUE)
+    }else{
+      # non-circular msus stay as-is
+      # pangraph_anno is linearised already
+      linear_msus <- msu_dat[!locus_tag %chin% circular_msus$locus_tag]
+      
+      split_msus = NULL
+    }
+  
+  
+  # Combine back with linear MSUs
+  msu_dat <- rbindlist(list(linear_msus, split_msus), use.names = TRUE)
+  
+  # define where the gene lies 
+  msu_dat[, mid:= (start + end)/2]
+  msu_dat[, post_ori := fcase(mid < (tot_len/2), "post",
+                                       default = "pre")]
+  
+  # adjust length to make region continuous
+  msu_dat[post_ori=="post", `:=`(start = start + tot_len,
+                                          end = end + tot_len)]
+  # clean dat
+  msu_dat[, c("mid", "post_ori"):= NULL]
+  
+  if(id == "node"){ 
+  # get grouping columns
+  grping_cols = col_order[!col_order %in% c("start", "end")]
+  
+  
+  # collapse split genes into one
+  msu_dat <- msu_dat[,
+                     .(
+                       start   = min(start),
+                       end     = max(end)
+                     ),
+                     by = grping_cols
+  ]
+  }
+  
+  setcolorder(msu_dat, col_order)
+  
+  return(msu_dat)
+  
+}
+
+anchor_msu_regions <- function(
+    msu_num,
+    msu_mergers_dt,
+    pangraph_anno,
+    nodes_dt,
+    ori_span = FALSE){
+  
+  anno = copy(pangraph_anno)
+  
+  msu_x_core_ids = msu_mergers_dt[msu_mergers == msu_num]
+  
+  # Get graph nodes
+  msu_x_core_nodes <- nodes_dt[block_id %chin% msu_x_core_ids$block_id]
+  
+  # adjust python values to +1
+  msu_x_core_nodes[, `:=`(start = start + 1,
+                          end = end + 1, 
+                          tot_len = tot_len + 1)]
+  
+  # switch circular value
+  ori_span = ifelse(nrow(msu_x_core_nodes[start > end]) > 0, 
+                    TRUE, FALSE)
+  
+  # detect origin spanning genes
+  if(isTRUE(ori_span)){
+    msu_x_core_nodes <- linearize_ori_intervals(msu_x_core_nodes)
   }
   
   # get msu regions
@@ -77,12 +138,17 @@ anchor_msu_regions <- function(
   # set keys for regions
   setnames(msu_x_region, c("start","end"), c("region_start","region_end"))
   
-  setkey(pangraph_anno, geno_id, ST, start, end)
+  # adjust annotations to match msu_nodes continuity 
+  if(isTRUE(ori_span)){
+    anno <- linearize_ori_intervals(anno, id = "anno")
+  }
+  
+  setkey(anno, geno_id, ST, start, end)
   
   setkey(msu_x_region, geno_id, ST, region_start, region_end)
   
   msu_region <- foverlaps(
-    x = pangraph_anno,
+    x = anno,
     y = msu_x_region,
     by.x = c("geno_id", "ST", "start", "end"),
     by.y = c("geno_id", "ST", "region_start", "region_end"),
@@ -91,7 +157,7 @@ anchor_msu_regions <- function(
   )
   
   msu_anchors <- foverlaps(
-    x = pangraph_anno,
+    x = anno,
     y = msu_x_core_nodes,
     by.x = c("geno_id", "ST", "start", "end"),
     by.y = c("geno_id", "ST", "region_start", "region_end"),
@@ -176,7 +242,7 @@ anchor_msu_regions <- function(
     syn_blocks,
     #lagging_block,
     merge(ordered_families[,.(gene_family, anchor)], 
-          pangraph_anno[, .(gene_family, locus_tag)],
+          anno[, .(gene_family, locus_tag)],
           all.x = TRUE, by = "gene_family")[,.(locus_tag, anchor)])
   
   syn_blocks[, n := .N, locus_tag]
@@ -185,16 +251,16 @@ anchor_msu_regions <- function(
                       syn_blocks[n>1 & !grepl(":", anchor)][,.(locus_tag, anchor)])
   
   
-  msu_anchors_anno <- merge(msu_region[, !c("region_start", "region_end")], 
-                            msu_anchors, 
-                            all.x = TRUE, by = "locus_tag")
+  # msu_anchors_anno <- merge(msu_region[, !c("region_start", "region_end")], 
+  #                           msu_anchors, 
+  #                           all.x = TRUE, by = "locus_tag")
   
-  msu_anchors_anno$msu = msu_num
+  msu_anchors$msu = msu_num
   
   # remove missing values
-  msu_anchors_anno <- msu_anchors_anno[!is.na(anchor)]
+  msu_anchors <- msu_anchors[!is.na(anchor) & !is.na(locus_tag)]
   
-  return(msu_anchors_anno)
+  return(msu_anchors)
   
 }
 
@@ -217,23 +283,17 @@ msu_regions_anchored <- foreach(msu = all_msu_nums,
 
 stopCluster(cl)
 
-
-# quick fix nonsensical junction in the origin-spanning msu
-msu_regions_anchored[, n:=.N, locus_tag]
-
-msu_regions_anchored <- rbind(msu_regions_anchored[n==1],
-                              msu_regions_anchored[n>1 & msu != "MSU_6"])
-
-msu_regions_anchored[,n:= NULL]
-
+msu_regions_anchored <- merge(pangraph_anno,
+                              msu_regions_anchored,
+                              all.x = TRUE, by = "locus_tag")
 
 # id duplicates within and across msu/junctions ---------------------------
 
 # Examine the msu blocks 
 
-msu_loci <- msu_regions_anchored[grepl(":", anchor)]
+msu_loci <- msu_regions_anchored[grepl(":", anchor)| (anchor=="" | is.na(anchor))]
 
-# Are there any AGs across junctions?
+# Are there any AGs across msu?
 msu_loci_grp = unique(msu_loci[,.(ag_type, gene_family, msu)])
 
 across_msu_loci = msu_loci_grp[,.(n = .N), by = c("ag_type", "gene_family")][n>1][,gene_family]
@@ -244,6 +304,7 @@ msu_regions_anchored$acrs_msu = 0
 msu_regions_anchored[gene_family %chin% across_msu_loci, acrs_msu := 1]
 
 # Examine the syntenic junctions ---------------------------------------------------
+# take into account null estimates
 
 junction_loci <- msu_regions_anchored[grepl(":", anchor)]
 
@@ -261,4 +322,4 @@ msu_regions_anchored[gene_family %chin% across_junction_loci, acrs_jun := 1]
 
 # Output anchored genes ---------------------------------------------------
 
-fwrite(msu_regions_anchored, paste0(outdir_tab, "/msu_regions_anchored.csv"))
+fwrite(msu_regions_anchored, paste0(outdir_dat, "/msu_regions_anchored.csv"))

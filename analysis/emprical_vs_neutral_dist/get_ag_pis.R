@@ -3,24 +3,25 @@
 # input require data sets
 # ags
 
-pangraph_anno <- fread(paste0(outdir_dat,"/pangraph_anno.csv"))
+pangraph_anno <- fread(paste0(outdir_dat, "/AGs_post_cat.csv"))[multi_gain!=1]
 
-temp_pangraph_anno <- copy(pangraph_anno)
-
-temp_pangraph_anno[, n:=.N, gene_family]
-
-temp_pangraph_anno <- temp_pangraph_anno[n!=1]
-
-list_unique_ags = unique(temp_pangraph_anno[ag_type!="core", gene_family]) 
-
-# remove paralogs (retain genes with only _1 or no underscore)
-
-list_unique_ags = c(grep("_", list_unique_ags, invert = TRUE, value = TRUE),
-                    grep("_1", list_unique_ags, value = TRUE))# 14,330 ags
+# temp_pangraph_anno <- copy(pangraph_anno)
+# 
+# temp_pangraph_anno[, n:=.N, gene_family]
+# 
+# temp_pangraph_anno <- temp_pangraph_anno[n!=1]
+# 
+# list_unique_ags = unique(temp_pangraph_anno[ag_type!="core", gene_family]) 
+# 
+# # remove paralogs (retain genes with only _1 or no underscore)
+# 
+# list_unique_ags = c(grep("_", list_unique_ags, invert = TRUE, value = TRUE),
+#                     grep("_1", list_unique_ags, value = TRUE))# 14,330 ags
 
 # number of genomes in pangenome
 tot_pangenome_size = length(unique(pangraph_anno$geno_id))
 
+list_unique_ags = unique(pangraph_anno$gene_family)
 # loop
 # directory of algined genes
 gene_align_loc = "C:/Users/carac/Dropbox/Vos_Lab/kpne_ags/input_data/PIRATE_485_lng_rds_out/feature_sequences/"

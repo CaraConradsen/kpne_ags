@@ -33,7 +33,7 @@ analyse_pi_desc_subtrees  <- function(tree, n_genomes) {
 
 
 # 2. Main simulation: many trees, collect results
-simulate_freq_vs_diversity <- function(n_genomes, n_trees, seed = 42, num_core = 2) {
+simulate_freq_vs_diversity <- function(n_genomes, n_trees, seed = 42, num_core = 10) {
   set.seed(seed)
   
   # Set up parallel cluster
@@ -62,8 +62,8 @@ simulate_freq_vs_diversity <- function(n_genomes, n_trees, seed = 42, num_core =
 
 
 # Global variables --------------------------------------------------------
-tot_pangenome_size = 93
-n_sim_trees = 50
+tot_pangenome_size = 214
+n_sim_trees = 10000
 
 # Example run (adjust n_tips, n_trees to taste; beware runtime if n_trees large)
 res <- simulate_freq_vs_diversity(n_genomes = tot_pangenome_size, n_trees = n_sim_trees)
@@ -71,16 +71,21 @@ res <- simulate_freq_vs_diversity(n_genomes = tot_pangenome_size, n_trees = n_si
 # Normalise/scaled results by mean freq subtree_br_len
 res[, t_hat := subtree_br_len/mean(subtree_br_len), freq]
 
+fwrite(res, paste0(outdir_dat,"/neutral_sim_214_ntree_10000.csv"))
+
 # Scale trees -------------------------------------------------------------
+# res <- fread(paste0(outdir_dat,"/neutral_sim_214_ntree_10000.csv"))
 # THERE ARE MISSING GENE FAMILY ALIGNMENTS???
 
-pangraph_anno <- fread(paste0(outdir_dat,"/pangraph_anno.csv"))
+AGs_post_cat <- fread(paste0(outdir_dat, "/AGs_post_cat.csv"))
+
+AGs_post_cat <- AGs_post_cat[multi_gain!=1]
 
 # Get non-paralog genes
-focal_gene_families = unique(pangraph_anno$gene_family)
+focal_gene_families = unique(AGs_post_cat$gene_family)
 
-focal_gene_families =  c(focal_gene_families[!grepl("_", focal_gene_families)],
-                         focal_gene_families[grepl("_1", focal_gene_families)])
+# focal_gene_families =  c(focal_gene_families[!grepl("_", focal_gene_families)],
+#                          focal_gene_families[grepl("_1", focal_gene_families)])
 
 gene_align_loc = "C:/Users/carac/Dropbox/Vos_Lab/kpne_ags/input_data/PIRATE_485_lng_rds_out/feature_sequences/"
 
@@ -103,7 +108,7 @@ ag_seg_sites <- foreach(i = focal_gene_families,
   if (is.null(temp_string)) return(NULL)
   
   #  Subset to loci present in pangraph annotation
-  sampled_loci = pangraph_anno[gene_family == i, locus_tag]
+  sampled_loci = AGs_post_cat[gene_family == i, locus_tag]
   
   # Subset by sequence names
   temp_string <- temp_string[names(temp_string) %in% sampled_loci]
@@ -150,8 +155,8 @@ pi_emp_k = ag_seg_sites[, .(mean_Sm = mean(Sm)), by = freq]
 res[pi_emp_k, on = "freq", pi_sim := t_hat * mean_Sm]
 
 
-# # Simulated frequency vs pi_sim 
-# plot(res$freq/tot_pangenome_size,res$pi_sim, 
+# # Simulated frequency vs pi_sim
+# plot(res$freq/tot_pangenome_size,res$pi_sim,
 #      xlab = "Accessory gene frequency",
 #      bty = "l", yaxt = "n",
 #      col = rgb(0.25,0.25,0.8, alpha = 0.5),

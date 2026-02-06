@@ -12,7 +12,8 @@ diagram <- DiagrammeR::grViz("digraph{
 graph [layout = dot, fontname = Arial, rankdir = TB, pad=0]
 
 node[shape = rectangle, style=\"rounded,filled\", fillcolor = white, margin = 0.25, fontname = Arial]
-kpne_assemblies[label =< Long read fastas from E. Feil <br/> <i> K.pneumoniae, n = 485 </i>>]
+kpne_assemblies[label =< Hybrid assemblies from E. Feil <br/> <i> K.pneumoniae</i>>]
+kpne_data[label =< Detect and remove clones <br/> <i> Mash 2.3, R: stats, n = 260 </i>>]
 bakta_anno[label =  <Annotate proteins <br/><font face='Courier New'> Bakta 1.11.2</font>>]
 map_ags[label = <Map AGs to MGEs <br/><font face='Courier New'> R: data.table 1.17.8, GenomicRanges 1.61.1 </font>>]
 remove_multiple_transfers[label = < Identify &amp; remove genes that arose from<br/>multiple horizontal transfers <br/><font face='Courier New'> R: data.table 1.17.8</font>>]
@@ -113,12 +114,12 @@ cog[label = <Assign genes to COG categories<br/><font face='Courier New'>eggnog-
 kegg[label = <Map genes to KEGG pathways<br/><font face='Courier New'>eggnog-mapper 2.1, bakta 1.11.2</font>>]
 }
 
-kpne_assemblies -> bakta_anno -> PIRATE -> {ag_align map_ags}
+kpne_assemblies -> kpne_data -> bakta_anno -> PIRATE -> {ag_align map_ags}
 {bakta_anno PIRATE} -> concat_fasta -> pangraph -> core_align -> core_gub -> core_tree-> remove_multiple_transfers
 pangraph -> msu -> junctions
 ag_align -> {kaks seg_sites}
-kpne_assemblies -> ices -> ice2 -> map_ags
-kpne_assemblies -> {prophage integrons transposons IS} -> map_ags
+kpne_data -> ices -> ice2 -> map_ags
+kpne_data -> {prophage integrons transposons IS} -> map_ags
 {map_ags junctions} -> remove_multiple_transfers -> kaks -> null_vs_emp
 null_vs_emp -> cog -> kegg
 subtree -> seg_sites -> poissons -> null_vs_emp -> slim

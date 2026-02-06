@@ -2,57 +2,22 @@
 # get minimal synteic units
 
 
-# Import PIRATE pangenome information -------------------------------------
-
-# pangenome info
-data_dir = "./input_data/PIRATE_485_lng_rds_out/"
-
-# map loci
-gene_families = fread(paste0(data_dir, "/PIRATE.gene_families.ordered.tsv"))
-colnames = colnames(gene_families)[c(1:2, 23:ncol(gene_families))]
-gene_families = gene_families[,..colnames]
-
-gene_families = melt(gene_families, id.vars = c("allele_name", "gene_family"),
-                     variable.name = "geno_id", value.name = "locus_tag")
-
-setDT(gene_families)
-
-gene_families <- gene_families[locus_tag!=""]
-
-
 # Retain only correct oriented chromosomes --------------------------------
-pan_anno <- fread(paste0(outdir_dat, "/all_pirate_anno_cogs.csv"))
-correct_start <- pan_anno[gene=="dnaA" & strand == "+" & 
-                            grepl("_1$", seqnames) & start == 70, 
-                          .(geno_id, ST)]
+pan_anno <- fread(paste0(outdir_dat, "/all_pirate_anno_cogs.csv"),
+                  select = c("geno_id","locus_tag","seqnames","start","end","strand",      
+                             "gene","product","COG_funct_cat","gene_family",   
+                             "number_genomes", "ST"))
 
-setorderv(correct_start, cols = "geno_id")
+geno_list = unique(pan_anno[,geno_id])
 
-# # take 2-5 genomes per ST (30 STs)
-# correct_start[,n := .N, ST]
-# correct_start_unique <- correct_start[n!=1, .SD[1:5], by = ST][!is.na(geno_id)]# subset taking first 5 STs
-# 
-# geno_list = correct_start_unique[,geno_id]# 115 genomes
-
-# no clones (mash > 2e-05)
-
-# geno_list = fread(paste0(outdir_dat, "/st_no_clones_mash2e-05.csv"))[,genomes]# 214 genomes
-
-geno_list = read.csv(paste0(outdir_dat, "/all_no_clones_mash2e-05.csv"),
-                     header = FALSE)$V1 # 214 genomes
+gene_family = unique(pan_anno[,.(gene_family)])
 
 # get fasta files
 
-lng_rd_fasta_files = list.files("./input_data/kpne_485_fasta/",
+hybrid_fasta_files = list.files("./input_data/kpne_260_chr_fasta/",
                                 full.names = TRUE)# take first 10 for now
 
 pangraph_dir =  "./input_data/pangraph/"
-
-chr_contigs <- unique(fread(paste0(outdir_dat, "/all_pirate_anno_cogs.csv"),
-                     select = c("seqnames", "asmbly_type")))
-
-# REMOVE PLASMIDS
-chr_contigs <- chr_contigs[asmbly_type!="plasmid"][,asmbly_type:=NULL]
 
 # get minimum gene length for pangenome
 min_gene_length <- fread(paste0(outdir_dat, "/all_pirate_anno_cogs.csv"),
@@ -63,108 +28,12 @@ colnames(min_gene_length)[1]="seqnames"
 min_gene_length <- dt2gr(min_gene_length)
 min_gene_length = min(width(min_gene_length))
 
-# Create a fasta of concatenated CDS using in PIRATE ----------------------
-
-# cl <- makePSOCKcluster(num_cores-6)
-# registerDoParallel(cl)
-
-cds_fasta_gff_dt <- foreach(genome = geno_list,
-                            .packages = c("Biostrings", "rtracklayer",
-                                          "GenomicRanges", "gUtils")) %do% {
-  # genome = geno_list[26]
-  focal_genome = genome
-  
-  # import fasta
-  
-  fasta_file = lng_rd_fasta_files[grepl(focal_genome, lng_rd_fasta_files)]
-  
-  coord_fasta = Biostrings::readDNAStringSet(fasta_file)
-  
-  # Get PIRATE cords
-  coord_fasta = coord_fasta[names(coord_fasta) %in% chr_contigs$seqnames]
-  
-  #--- Load PIRATE GFF cord info file ---
-  
-  cords = fread(paste0(data_dir, "/co-ords/", focal_genome,".co-ords.tab"))
-  
-  colnames(cords)[1] = "locus_tag"
-  
-  cords = merge(cords, gene_families[geno_id == focal_genome,
-                                     .(gene_family, locus_tag, allele_name)],
-                all.x = TRUE, by = "locus_tag")
-  
-  # Convert strand to "+" / "-"
-  cords$Strand <- ifelse(cords$Strand == "Forward", "+", "-")
-  
-  #convert to lower case
-  colnames(cords) = tolower(colnames(cords))
-  
-  # set contig as seqname
-  colnames(cords)[which(names(cords)=="contig")] = "seqnames"
-  
-  # remove missing loci (short proteins)
-  cords <- cords[!is.na(gene_family)]
-  
-  # remove plasmids
-  cords <- cords[seqnames %chin% chr_contigs$seqnames]
-  
-  # # set order
-  # setorderv(cords, cols = 'start')
-  # cords[gene %chin% c("dnaA", "dnaN", "recF", "gyrB", "gyrA")]
-  # 
-  # Create grange file
-  gr_cords <- dt2gr(cords)
-  
-  # subset cols
-  mcols(gr_cords) <- mcols(gr_cords)[, "locus_tag", drop = FALSE]
-  
-  # determinenew cds positions
-  cum_lengths <- cumsum(width(gr_cords))
-  
-  adj_gff_dt <- data.frame(start = as.integer(c(1, cum_lengths[1:length(cum_lengths)-1]+1)),
-                           end = as.integer(cum_lengths),
-                           strand = as.character(strand(gr_cords)),
-                           locus_tag = gr_cords$locus_tag)
-  
-  adj_gff_dt$geno_id = focal_genome
-  
-  # Merge overlapping CDS on same strand
-  gr_cords <- reduce(gr_cords, ignore.strand = TRUE)
-  
-  # Extract sequences
-  cds_seqs <- getSeq(coord_fasta, gr_cords)
-  
-  concatenated_cds <- paste(as.character(cds_seqs), collapse = "")
-  
-  concatenated_cds_dna <- DNAString(concatenated_cds)
-  
-  # Create a DNAStringSet with one "sequence" per genome
-  final_fasta <- DNAStringSet(concatenated_cds_dna)
-  names(final_fasta) <- focal_genome  # genome identifier
-  
-  # Write CDS FASTA
-  writeXStringSet(final_fasta, paste0(pangraph_dir,focal_genome, ".fasta"))
-  
-  cat("Processed", focal_genome, "\n")
-  
-  setDT(adj_gff_dt)
-  
-}
-
-cds_fasta_gff_dt <- rbindlist(cds_fasta_gff_dt)
-# stopCluster(cl)
-
-# fwrite(cds_fasta_gff_dt, paste0(outdir_dat, "/cds_fasta_gff_dt.csv"))
 
 # Assign Core vs accessory ------------------------------------------------
-# cds_fasta_gff_dt <- fread(paste0(outdir_dat, "/cds_fasta_gff_dt.csv"))
 
-cds_fasta_gff_dt <- merge(cds_fasta_gff_dt, gene_families[,!"allele_name"],
-                          all.x = TRUE, by = c("geno_id", "locus_tag"))
+n_genomes = length(unique(pan_anno[, geno_id]))
 
-n_genomes = length(unique(cds_fasta_gff_dt[, geno_id]))
-
-cds_fasta_gff_dt[, n := .N, gene_family]
+pan_anno[, n := .N, gene_family]
 
 cds_fasta_gff_dt[, ag_type := fcase(n < 0.99 * n_genomes & n >=  0.95 * n_genomes, "soft",
                                       n < 0.95 * n_genomes & n >=  0.15 * n_genomes, "shell",
@@ -402,7 +271,7 @@ path_dt <- merge(path_dt, ST_labels, all.x=TRUE, by ="geno_id")
 
 # Get cds_gff
 pangraph_anno <- merge(cds_fasta_gff_dt, 
-                       pan_anno[,.(geno_id, locus_tag, gene, product, COG_funct_cat,KEGG, ST)],
+                       pan_anno[,.(geno_id, locus_tag, COG_funct_cat,KEGG, ST)],
                        all.x = TRUE, by =c("geno_id", "locus_tag"))
 
 
@@ -426,7 +295,7 @@ msu_paths_dt[, ord_msu := paste(unlist(msu_mergers), collapse=","), by = geno_id
 # fwrite(msu_paths_dt, paste0(outdir_dat, "/msu_paths_dt.csv"))
 # fwrite(path_dt, paste0(outdir_dat, "/path_dt.csv"))
 # fwrite(pangraph_anno, paste0(outdir_dat, "/pangraph_anno.csv"))
-
+# 
 
 most_common_ord_msu <- msu_paths_dt[, .N, by = ord_msu][which.max(N), ord_msu]
 
@@ -522,9 +391,6 @@ for (i in core_gub_tree_geno$tip.label) {#unique(msu_plot$geno_id)
 dev.off()
 
 # Plot to closer inspect novel genome order ------------------------------------------
-library(ggtree)
-library(ggplot2)
-
 
 # detect genomes that differ in msu order/orientation
 unordered_msu_genos <- as.character(
