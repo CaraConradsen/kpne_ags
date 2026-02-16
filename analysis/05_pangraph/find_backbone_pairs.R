@@ -4,13 +4,13 @@
 msu_paths_dt <- fread(paste0(outdir_dat, "/msu_paths_dt.csv"))
 path_dt <- fread(paste0(outdir_dat, "/path_dt.csv"))
 
-pangraph_anno <- fread(paste0(outdir_dat, "/pangraph_anno.csv"))
+pan_anno <- fread(paste0(outdir_dat, "/pangenome_anno.csv"))
 nodes_dt <- fread(paste0(outdir_dat, "/nodes_dt.csv"))
 msu_mergers_dt <- fread(paste0(outdir_dat, "msu_mergers_dt.csv")) # core block ids
 
 # parms
 # geno_ids
-geno_ids = unique(pangraph_anno$geno_id)
+geno_ids = unique(pan_anno$geno_id)
 all_msu_nums = unique(msu_mergers_dt$msu_mergers)
 
 # Get backbone for MSUs --------------------------------------------------
@@ -54,8 +54,8 @@ linearize_ori_intervals<- function(msu_dat, id = "node"){
     
     }else{
       # non-circular msus stay as-is
-      # pangraph_anno is linearised already
-      linear_msus <- msu_dat[!locus_tag %chin% circular_msus$locus_tag]
+      # pan_anno is linearised already
+      linear_msus <- msu_dat[!fus_locus_tag %chin% circular_msus$fus_locus_tag]
       
       split_msus = NULL
     }
@@ -99,11 +99,11 @@ linearize_ori_intervals<- function(msu_dat, id = "node"){
 anchor_msu_regions <- function(
     msu_num,
     msu_mergers_dt,
-    pangraph_anno,
+    pan_anno,
     nodes_dt,
     ori_span = FALSE){
   
-  anno = copy(pangraph_anno)
+  anno = copy(pan_anno)
   
   msu_x_core_ids = msu_mergers_dt[msu_mergers == msu_num]
   
@@ -229,7 +229,7 @@ anchor_msu_regions <- function(
     ]
     
     between_genes[, anchor := anchor_names]
-    between_genes[, .(locus_tag, anchor)]
+    between_genes[, .(fus_locus_tag, anchor)]
   })
   
   
@@ -242,13 +242,13 @@ anchor_msu_regions <- function(
     syn_blocks,
     #lagging_block,
     merge(ordered_families[,.(gene_family, anchor)], 
-          anno[, .(gene_family, locus_tag)],
-          all.x = TRUE, by = "gene_family")[,.(locus_tag, anchor)])
+          anno[, .(gene_family, fus_locus_tag)],
+          all.x = TRUE, by = "gene_family")[,.(fus_locus_tag, anchor)])
   
-  syn_blocks[, n := .N, locus_tag]
+  syn_blocks[, n := .N, fus_locus_tag]
   
-  msu_anchors = rbind(syn_blocks[n==1][,.(locus_tag, anchor)],
-                      syn_blocks[n>1 & !grepl(":", anchor)][,.(locus_tag, anchor)])
+  msu_anchors = rbind(syn_blocks[n==1][,.(fus_locus_tag, anchor)],
+                      syn_blocks[n>1 & !grepl(":", anchor)][,.(fus_locus_tag, anchor)])
   
   
   # msu_anchors_anno <- merge(msu_region[, !c("region_start", "region_end")], 
@@ -258,7 +258,7 @@ anchor_msu_regions <- function(
   msu_anchors$msu = msu_num
   
   # remove missing values
-  msu_anchors <- msu_anchors[!is.na(anchor) & !is.na(locus_tag)]
+  msu_anchors <- msu_anchors[!is.na(anchor) & !is.na(fus_locus_tag)]
   
   return(msu_anchors)
   
@@ -275,7 +275,7 @@ msu_regions_anchored <- foreach(msu = all_msu_nums,
                                     anchor_msu_regions(
                                     msu_num        = msu,
                                     msu_mergers_dt = msu_mergers_dt,
-                                    pangraph_anno  = pangraph_anno,
+                                    pan_anno  = pan_anno,
                                     nodes_dt       = nodes_dt
                                   )
                                 } 
@@ -283,9 +283,9 @@ msu_regions_anchored <- foreach(msu = all_msu_nums,
 
 stopCluster(cl)
 
-msu_regions_anchored <- merge(pangraph_anno,
+msu_regions_anchored <- merge(pan_anno,
                               msu_regions_anchored,
-                              all.x = TRUE, by = "locus_tag")
+                              all.x = TRUE, by = "fus_locus_tag")
 
 # id duplicates within and across msu/junctions ---------------------------
 

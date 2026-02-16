@@ -1,12 +1,8 @@
 # run pangraph to get syntenic blocks
-# get minimal synteic units
-
+# get minimal syntenic units
 
 # Retain only correct oriented chromosomes --------------------------------
-pan_anno <- fread(paste0(outdir_dat, "/all_pirate_anno_cogs.csv"),
-                  select = c("geno_id","locus_tag","seqnames","start","end","strand",      
-                             "gene","product","COG_funct_cat","gene_family",   
-                             "number_genomes", "ST"))
+pan_anno <- fread(paste0(outdir_dat, "/pangenome_anno.csv"))
 
 geno_list = unique(pan_anno[,geno_id])
 
@@ -15,7 +11,7 @@ gene_family = unique(pan_anno[,.(gene_family)])
 # get fasta files
 
 hybrid_fasta_files = list.files("./input_data/kpne_260_chr_fasta/",
-                                full.names = TRUE)# take first 10 for now
+                                full.names = TRUE)
 
 pangraph_dir =  "./input_data/pangraph/"
 
@@ -29,25 +25,14 @@ min_gene_length <- dt2gr(min_gene_length)
 min_gene_length = min(width(min_gene_length))
 
 
-# Assign Core vs accessory ------------------------------------------------
-
-n_genomes = length(unique(pan_anno[, geno_id]))
-
-pan_anno[, n := .N, gene_family]
-
-cds_fasta_gff_dt[, ag_type := fcase(n < 0.99 * n_genomes & n >=  0.95 * n_genomes, "soft",
-                                      n < 0.95 * n_genomes & n >=  0.15 * n_genomes, "shell",
-                                      n < 0.15 * n_genomes, "cloud",
-                                      default = "core")]
-
-cds_fasta_gff_dt[, n := NULL]
-
 # Run Noll et al.'s Pangraph ----------------------------------------------
 
 # 1. ### Generate pangraph
 
+# ! Make sure fasta headers are the genome name and not contig #
+
 pangraph_path = "/home/carac/anaconda3/bin/pangraph" # pangraph program dir 
-threads = 18 # Number of threads
+threads = 20 # Number of threads
 min_length = round(min_gene_length, digits = -1) # min block size in bp
 circular_flag = "--circular"   # or "" if not circular
 input_dir = "/mnt/c/Users/carac/Dropbox/Vos_Lab/kpne_ags/input_data/pangraph"# input folder dir
@@ -84,12 +69,13 @@ print(end - start) # Print runtime
 # 93 seqs Time difference of 11.95702 mins
 # 115 seqs Time difference of 13.96003 mins
 # 214 seqs Time difference of 32.05445 mins
+# 260 seqs Time difference of 46.88418 mins
 
 # 2. ### Generate clonalframe for trees using pangraph and gubbins
 
 # get core
 pangraph_input = file.path(input_dir, "graph.json")
-set_ref_strain = "SPARK_1004_C1"
+set_ref_strain = "SPARK_1006_C1"
 core_output_file = file.path(input_dir, "core_genome_aln.fa")# output file dir
 
 # pangraph core command string 
@@ -147,6 +133,7 @@ print(end - start) # Print runtime
 # 93 seqs Time difference of 25.72868 mins
 # 115 seqs Time difference of 25.72868 mins
 # 214 seqs Time difference of 2.804536 hours
+# 260 seqs Time difference of 5.134598 hours
 
 # Import json -------------------------------------------------------------
 # # Read from a local file
@@ -269,11 +256,6 @@ msu_len_dt <- rbindlist(lapply(MSU_len, function(x) {
 
 path_dt <- merge(path_dt, ST_labels, all.x=TRUE, by ="geno_id")
 
-# Get cds_gff
-pangraph_anno <- merge(cds_fasta_gff_dt, 
-                       pan_anno[,.(geno_id, locus_tag, COG_funct_cat,KEGG, ST)],
-                       all.x = TRUE, by =c("geno_id", "locus_tag"))
-
 
 msu_len_dt$msu_mergers = names(MSU_len)
 
@@ -294,8 +276,6 @@ msu_paths_dt[, ord_msu := paste(unlist(msu_mergers), collapse=","), by = geno_id
 
 # fwrite(msu_paths_dt, paste0(outdir_dat, "/msu_paths_dt.csv"))
 # fwrite(path_dt, paste0(outdir_dat, "/path_dt.csv"))
-# fwrite(pangraph_anno, paste0(outdir_dat, "/pangraph_anno.csv"))
-# 
 
 most_common_ord_msu <- msu_paths_dt[, .N, by = ord_msu][which.max(N), ord_msu]
 
@@ -320,7 +300,9 @@ setorderv(msu_plot, c("geno_id", "order"))
 
 # All genomes msu plot ----------------------------------------------------
 
-pdf(paste0(outdir_fig, "/msu_214_genos.pdf"), width = 14.27, height = 23.38)
+png(filename = paste0(outdir_fig, "/msu_260_genos.png"),
+    width = 14.27,height = 23.38,
+    units = "in",res = 300)
 
 # Setup
 yvals <- 1:length(unique(msu_plot$geno_id))      # 24 unique Y values
@@ -403,28 +385,30 @@ nblocks <- nrow(msu_cols)       # 5 squares per row
 # Define square size
 sq_size <- 1       # both width and height = 1
 
-# consensus "SPARK_1004_C1"
-focal_geno = c("SPARK_1004_C1",
-               unordered_msu_genos, "SPARK_192_C1")
+# consensus "SPARK_1006_C1"
+focal_geno = c("SPARK_1332_C1","SPARK_1006_C1",
+               unordered_msu_genos, "SPARK_587_C1")
 
+png(filename = paste0(outdir_fig, "/msu_subset260_unordered_msu.png"),
+    width = 9.69, height = 10.74, type = "cairo",
+    units = "in",res = 300)
 
-pdf(paste0(outdir_fig, "/msu_subset214_unordered_msu.pdf"), width = 11.69, height = 8.74)
 
 # plot Core units + phylogenetic tree
 layout(matrix(c(1,2,3,4), nrow=2, byrow = TRUE), 
        widths=c(1,2), heights = c(2,4))  # left = tree, right = other plot
 plot.new()
 
-msu_plot_lengths <- merge(msu_plot[geno_id == "SPARK_1004_C1", 
+msu_plot_lengths <- merge(msu_plot[geno_id == "SPARK_1006_C1", 
                                    .(msu_mergers,order,cols)], 
                           msu_len_dt, all.x = TRUE, by = "msu_mergers")
 msu_plot_lengths[, labs:= paste0(msu_length, " bp")]
 
 setorderv(msu_plot_lengths,cols = "order")
 
-par(mar = c(6,6,0.2,1))
+par(mar = c(4,6,0.2,1))
 
-barp_y_lim = pretty(range(msu_plot_lengths$msu_length)) 
+barp_y_lim = pretty(range(msu_plot_lengths$msu_length))[-7] 
 
 with(msu_plot_lengths,
      barplot(msu_length, col = cols,
@@ -436,8 +420,8 @@ with(msu_plot_lengths,
      axis(side = 1, las = 2, 
           tick = FALSE, cex.axis = 0.85,
           at = order - 0.5, 
-          label = labs)
-)
+          label = labs))
+
 axis(side = 2, at = barp_y_lim,
      labels = barp_y_lim/1000, las = 2)
 
@@ -446,10 +430,10 @@ sub_tree <- keep.tip(core_gub_tree_geno, focal_geno)
 
 ntip <- Ntip(sub_tree)
 
-par(xpd = TRUE)
+par(xpd = TRUE, mar = c(4,5,0.2,0))
 plot(sub_tree,
      edge.width = 2,
-     y.lim = c(3.85, ntip + 0.5),
+     y.lim = c(3.25, ntip + 0.25),
      x.lim = c(5000, max(node.depth.edgelength(sub_tree))+100),
      show.tip.label = FALSE,
      edge.color = "darkgrey",
@@ -490,7 +474,7 @@ for (i in sub_tree$tip.label) {
              length = 0.05, col = "white")
     }
   }
-  label_txt <- if (!i %in% c("SPARK_1004_C1","SPARK_192_C1")) unique(dat$geno_id) else paste0(unique(dat$geno_id), "\n(consensus)")
+  label_txt <- if (!i %in% c("SPARK_1006_C1","SPARK_587_C1","SPARK_1332_C1")) unique(dat$geno_id) else paste0(unique(dat$geno_id), "\n(consensus)")
   
   axis(side = 2, tick = FALSE, las = 2,
        cex.axis = 0.85,
