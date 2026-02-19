@@ -6,8 +6,9 @@ if (file.exists(outdir_homoplasy)==FALSE){
   dir.create(outdir_homoplasy, recursive = TRUE)
 }
 
-# get bootstrapped trees
-boot_trees <- read.tree("./input_data/bootstrapped_gubbins/tmp8yl_0c9w/RAxML_bootstrap.core_genome_aln.iteration_20.bootstrapped_trees")
+core_tree <- read.tree("./input_data/bootstrapped_gubbins/tmp8yl_0c9w/RAxML_bestTree.core_genome_aln.iteration_20")
+
+core_tree_resolved <- multi2di(core_tree)
 
 # Get remaining accessory genes after synteny analysis --------------------
 msu_regions_anchored <- fread(paste0(outdir_dat, "/msu_regions_anchored.csv"))
@@ -40,101 +41,104 @@ setDT(ag_presence_absence)
 fwrite(ag_presence_absence, paste0(outdir_dat, "/homoplasy_ag_presence_absence.csv"))
 
 
-# Get bootstrapped homoplasy estiamtes ------------------------------------
+# Get bootstrapped homoplasy estimates ------------------------------------
 
 # split each ag
-ag_dat <- ag_presence_absence[, -3, with = FALSE][1:10,]# CHANGE THIS!!
+ag_dat <- ag_presence_absence[, -3, with = FALSE]
 
-ag_dat[, {
-  
-  ag_dir <- file.path(outdir_homoplasy, paste0("ag_", start))
-  dir.create(ag_dir, recursive = TRUE, showWarnings = FALSE)
-  
-  fwrite(.SD,
-         file.path(ag_dir, paste0("presenceAbsence_INDELs_", start, ".csv")))
-  
-  NULL
-  
-}, by = start]
+fwrite(ag_dat,file.path(outdir_homoplasy, paste0("/presenceAbsence.csv")))
 
 
-# write trees
-tree_rep_dir <- paste0(outdir_homoplasy,"/trees")
+# # set into groups
+# ag_dat[, group := (seq_len(.N) - 1) %/% 35 + 1]
+# 
+# ag_dat[, {
+# 
+#   ag_dir <- file.path(outdir_homoplasy, paste0("ag_", group))
+#   dir.create(ag_dir, recursive = TRUE, showWarnings = FALSE)
+# 
+# 
+#   NULL
+# 
+# }, by = group]
 
-dir.create(tree_rep_dir, recursive = TRUE, showWarnings = FALSE)
+write.tree(core_tree_resolved, file = paste0(outdir_homoplasy, "/core_tree_resolved.tree"))
 
-for (i in 1:10) {#length(boot_trees) CHANGE THIS!!
-  write.tree(boot_trees[[i]], file = paste0(tree_rep_dir, "/boot_tree_",i,".tre"))
-}
 
 # Run homoplasyFinder -----------------------------------------------------
-old_dir <- getwd()
-setwd(outdir_homoplasy)
-
 
 # Find the csv and tree files
-presenceAbsenceFile <- paste0(getwd(), "/presenceAbsence_INDELs.csv") 
-treeFile <- paste0(getwd(), "/core_gub_tree.tre")
+presenceAbsenceFile <- list.files(outdir_homoplasy,
+                                  recursive = TRUE, full.names = TRUE,
+                                  pattern = ".csv")
+
+treeFile <- list.files(outdir_homoplasy,
+                       recursive = TRUE, full.names = TRUE,
+                       pattern = ".tree")
+
+system2("Rscript",
+        args = c("./analysis/06_id_HGT_ags/run_homoplasy.R",
+                 presenceAbsenceFile,
+                 treeFile,
+                 paste0(outdir_homoplasy,"/")))
 
 
-# Get the current working directory
-workingDirectory <- paste0(getwd(), "/")
+# Import Consistency indices ---------------------------------------------
+# get ci
+list_homoplasies <- list.files(outdir_homoplasy,
+                               recursive = TRUE, full.names = TRUE,
+                               pattern = ".txt")
 
-# Run the HomoplasyFinder jar tool
-inconsistentPositions <- runHomoplasyFinderInJava(treeFile=treeFile, 
-                                                  presenceAbsenceFile=presenceAbsenceFile, 
-                                                  path=workingDirectory)
-# clean file names
-files <- list.files()
-new_files <- gsub("_\\d{2}-\\d{2}-\\d{2}", "", files)
-file.rename(from = files, to = new_files)
+CI_est <- fread(list_homoplasies)
 
-# Read in the output table
-resultsFile <- paste0(workingDirectory, "consistencyIndexReport.txt")
-homoplasy_res <- read.table(resultsFile, header=TRUE, sep="\t", stringsAsFactors=FALSE)
+# Plot relationship -------------------------------------------------------
 
-setDT(homoplasy_res)
+colnames(CI_est) <- tolower(colnames(CI_est))
 
-setwd(old_dir)
+CI_est <- merge(CI_est,
+                ag_presence_absence[,.(start, end, gene_family)],
+                all.x = TRUE, by = c("start", "end"))
 
-png(
-  filename = paste0(outdir_fig, "/Homoplasy_214.png"),
-  width = 800,  # total width in pixels
-  height = 900, # total height in pixels
-  res = 150      # resolution, 150–300 dpi
-)
+# save data 
+fwrite(CI_est[,-c(1,2)], paste0(outdir_dat, "/consistencyindex.csv"))
 
-par(mar = c(4,4,0.1,0.1))
-hist(homoplasy_res$MinimumNumberChangesOnTree, 
-     breaks = 41, xlim = c(1,41), 
-     main = "",
-     yaxt = "n", xlab = "Minimum number of changes on Tree",
-     col = "dodgerblue", border="dodgerblue4")
-axis(side = 2, at = seq(0, 2000, length.out = 5),
-     las =2, labels = seq(0, 2000, length.out = 5))
+
+grping_dat <- unique(ag_homo_dat[,.(gene_family, anchor, number_genomes)])
+
+grping_dat[, syn_jun := fcase(anchor == "", 0,
+                              default = 1)]
+
+grping_dat[, anchor := NULL]
+
+plot_data <- merge(CI_est,grping_dat,
+                   all.x=TRUE, by = c("gene_family") )
+
+
+png(paste0(outdir_fig,"/ci_vs_pangenome.png"),
+    width = 11, height = 10.5, units = "cm", res = 300,
+    pointsize = 10, type = "cairo")
+
+
+par(mar = c(4, 4,2,0.5))
+with(plot_data,
+     plot(number_genomes, consistencyindex ,
+          pch = 19, bty = "L",
+          cex = 0.5, yaxt ="n",
+          col = ifelse(syn_jun==0,
+                       rgb(0.1,0.1, 0.8, alpha = 0.5),
+                       rgb(0.8,0.1, 0.1, alpha = 0.5)),
+          xlab = "Number of genomes", 
+          ylab = "Mean consistency index"))
+
+axis(side=2, at = seq(0,1, 0.2),
+     las = 2,
+     labels = sprintf("%.1f", seq(0,1, 0.2)))
+
+
+legend("top", pch = c(19,19), 
+       col = c(rgb(0.8,0.1, 0.1, alpha = 0.5),
+               rgb(0.1,0.1, 0.8, alpha = 0.5)
+       ), cex = 0.75, bty="n",
+       legend = c("Within syntenic block", "Unknown synteny"))
 
 dev.off()
-
-png(
-  filename = paste0(outdir_fig, "/Homoplasy_CI_214.png"),
-  width = 800,  # total width in pixels
-  height = 900, # total height in pixels
-  res = 150      # resolution, 150–300 dpi
-)
-par(mar = c(4,4,0.1,0.1))
-hist(homoplasy_res$ConsistencyIndex, 
-     breaks = 41, xlim = c(0,0.5), 
-     main = "",
-     yaxt = "n", xlab = "Consistency index",
-     col = "firebrick", border="firebrick4")
-axis(side = 2, at = seq(0, 1500, length.out = 4),
-     las =2, labels = seq(0, 1500, length.out = 4))
-
-dev.off()
-
-homoplasy_res[, multi_gain:= fcase(ConsistencyIndex < 0.5 | MinimumNumberChangesOnTree > 3, 1,
-                                   default = 0)]
-colnames(homoplasy_res)[1:2] = c("start", "end")
-
-homoplasy_res <- merge(ag_presence_absence[,1:3], homoplasy_res, 
-                       all.x = TRUE, by = c("start", "end"))

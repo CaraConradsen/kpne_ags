@@ -20,15 +20,17 @@ invisible(sapply(
   source)
 )
 
+options(java.parameters = "-Xmx60g")
+
 # library(remotes)
 # remotes::install_version("rlang", version = "1.1.2")
 # remotes::install_version("dplyr", version = "1.1.3")
 # Package dependencies
 # this function attaches libraries, but also checks and installs missing packages
 packages <- c("ape","Biostrings","BSgenome", "doParallel","data.table", "MASS", "yyjsonr",
-              "eulerr","foreach","GenomicRanges","gUtils","ggnewscale", "RCy3",
-              "msaR","shape", "ade4", "genoPlotR","MASS","phangorn",
-              "ggiraph","htmlwidgets","igraph", "jsonlite","plyranges","pegas", "phyloseq", "VennDiagram", 
+              "eulerr","foreach","GenomicRanges","ggplot2","ggtree","gUtils","ggnewscale", "RCy3",
+              "mlplasmids","msaR","shape", "ade4", "genoPlotR","MASS","phangorn",
+              "ggiraph","htmlwidgets","igraph", "jsonlite","plyranges","pegas", "phyloseq", "micropan","VennDiagram", 
               "phytools","RColorBrewer","rtracklayer", "seqinr","stats","stringr","treeio", "vegan",
               "vioplot", "homoplasyFinder")
 

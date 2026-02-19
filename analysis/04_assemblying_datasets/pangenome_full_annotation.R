@@ -47,13 +47,15 @@ pirate_anno <- foreach(i = 1:length(hybrid_gffs_files),
                         
                         anno_dt$geno_id = geno_id
                         
+                        anno_dt$gene_length = width(anno)
+                        
                         # get cogs
                         res <- lapply(anno_dt$Dbxref, extract_cogs)
                         res_dt <- data.table::transpose(res)
                         anno_dt[, c("COG_funct_cat", "COG_ortho_grp") := res_dt]
                         anno_dt[, KEGG := extract_keggs(Dbxref), by = .I]
                         
-                        anno_dt[type == "CDS", .(geno_id, seqnames, start,end, strand, 
+                        anno_dt[type == "CDS", .(geno_id, seqnames, start,end, strand,gene_length, 
                                                             locus_tag,gene, product,
                                                             COG_funct_cat, COG_ortho_grp, KEGG)]
                         
@@ -105,19 +107,18 @@ pirate_anno <- merge(pirate_lng, pirate_anno,
 
 
 # fix fission/fusion start
-collapsed <- pirate_anno[, .(fus_locus_tag, start, end)]
+collapsed <- pirate_anno[, .(fus_locus_tag, start, end, strand, gene_length)]
 
 collapsed <- collapsed[, .(
-  start = min(start),
-  end   = max(end)
+  fstart  = min(start),
+  fend    = max(end),
+  fstrand = strand[which.max(gene_length)]
 ), by = fus_locus_tag]
 
-colnames(collapsed)[2:3] <- c("fstart", "fend")
 
 pirate_anno <- merge(pirate_anno, collapsed,
                      all.x = TRUE, by = c("fus_locus_tag"))
 
-pirate_anno[gene_family=="g002766"]
 
 # Add ST ------------------------------------------------------------------
 ST_info <- fread("C:/Users/carac/Dropbox/Vos_Lab/SpARK data/spark_metadata.csv", 
@@ -358,11 +359,14 @@ fwrite(pirate_anno, paste0(outdir_dat, "/all_pirate_anno_cogs.csv"))
 
 
 # Pangenome for analysis --------------------------------------------------
+# need to account for fusion loci on different strands
+
 pan_anno <- unique(pirate_anno[,.(gene_family,geno_id,fus_locus_tag, 
                                   number_genomes, consensus_product,
-                                  fstart, fend, strand, ST)])
+                                  fstart, fend, fstrand, ST)])
 
-colnames(pan_anno)[6:7] <- c("start","end")
+colnames(pan_anno)[6:8] <- c("start","end","strand")
+
 
 # Assign Core vs accessory ------------------------------------------------
 
