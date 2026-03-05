@@ -13,7 +13,7 @@ core_tree_resolved <- multi2di(core_tree)
 # Get remaining accessory genes after synteny analysis --------------------
 msu_regions_anchored <- fread(paste0(outdir_dat, "/msu_regions_anchored.csv"))
 
-ag_homo_dat <- msu_regions_anchored[acrs_msu!=1][acrs_jun != 1][ag_type != "core"][number_genomes != 1][!grepl("_",gene_family)]
+ag_homo_dat <- msu_regions_anchored[ag_type != "core"][number_genomes != 1][!grepl("_",gene_family)]#[acrs_msu!=1][acrs_jun != 1]
 
 # create presence/absence for gene_families -------------------------------
 # Create binary ag presence_absence data.table 
@@ -36,10 +36,10 @@ dummy_regions <- data.frame(
 ag_presence_absence <- cbind(dummy_regions, ag_presence_absence)
 
 setDT(ag_presence_absence)
-
-# save data 
-fwrite(ag_presence_absence, paste0(outdir_dat, "/homoplasy_ag_presence_absence.csv"))
-
+# 
+# # save data 
+# fwrite(ag_presence_absence, paste0(outdir_dat, "/homoplasy_ag_presence_absence.csv"))
+# 
 
 # Get bootstrapped homoplasy estimates ------------------------------------
 
@@ -48,19 +48,6 @@ ag_dat <- ag_presence_absence[, -3, with = FALSE]
 
 fwrite(ag_dat,file.path(outdir_homoplasy, paste0("/presenceAbsence.csv")))
 
-
-# # set into groups
-# ag_dat[, group := (seq_len(.N) - 1) %/% 35 + 1]
-# 
-# ag_dat[, {
-# 
-#   ag_dir <- file.path(outdir_homoplasy, paste0("ag_", group))
-#   dir.create(ag_dir, recursive = TRUE, showWarnings = FALSE)
-# 
-# 
-#   NULL
-# 
-# }, by = group]
 
 write.tree(core_tree_resolved, file = paste0(outdir_homoplasy, "/core_tree_resolved.tree"))
 
@@ -100,7 +87,7 @@ CI_est <- merge(CI_est,
                 all.x = TRUE, by = c("start", "end"))
 
 # save data 
-fwrite(CI_est[,-c(1,2)], paste0(outdir_dat, "/consistencyindex.csv"))
+fwrite(CI_est[,-c(1,2)], paste0(outdir_dat, "/consistencyindex_syn.csv"))
 
 
 grping_dat <- unique(ag_homo_dat[,.(gene_family, anchor, number_genomes)])

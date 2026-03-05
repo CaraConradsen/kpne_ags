@@ -1,3 +1,6 @@
+# SFREEMAP
+library(sfreemap)
+
 # tree: rooted phylo object
 # gene_matrix: matrix of 0/1, rows = taxa, columns = genes
 # taxa names must match tree$tip.label
@@ -42,48 +45,43 @@ nnode <- Nnode(core_tree_resolved)
 gain_loss_results <- foreach(
   g = genes,
   .combine = rbind,
-  .packages = c("ape")
+  .packages = c("ape", "sfreemap", "phytools")
 ) %dopar% {
-
-  trait <- factor(gene_matrix[, g], levels = c(0,1))
+  
+  trait <- gene_matrix[, g]
   
   trait <- trait[core_tree_resolved$tip.label]
-
-  fit <- try(ace(trait, core_tree_resolved,
-                 type="discrete", model="ARD"),
-             silent = TRUE)
-
-  # Catch failed fits
-  if(inherits(fit, "try-error") || any(is.na(fit$lik.anc))) {
-    return(data.frame(
-      gene_family = g,
-      gains = NA,
-      losses = NA,
-      anc_state = NA
-    ))
-  }
-
+  
+  stoc_out <- sfreemap(core_tree_resolved, trait, model="ER",
+                      method="mcmc")
+  
+  edge_gains <- stoc_out[[1]]$mapped.edge.lmt[, "0,1"]
+  
+  total_gains <- sum(stoc_out[[1]]$mapped.edge.lmt[, "0,1"] > 0)
+  total_gains
+  
+  
   ntip  <- Ntip(core_tree_resolved)
   nnode <- Nnode(core_tree_resolved)
-
+  
   node_states <- apply(fit$lik.anc, 1, function(x) {
     as.numeric(names(x)[which.max(x)])
   })
-
+  
   states <- numeric(ntip + nnode)
   states[1:ntip] <- as.numeric(as.character(trait))
   states[(ntip + 1):(ntip + nnode)] <- node_states
-
+  
   edges <- core_tree_resolved$edge
-
+  
   gains  <- sum(states[edges[,1]] == 0 &
-                states[edges[,2]] == 1,
+                  states[edges[,2]] == 1,
                 na.rm = TRUE)
-
+  
   losses <- sum(states[edges[,1]] == 1 &
-                states[edges[,2]] == 0,
+                  states[edges[,2]] == 0,
                 na.rm = TRUE)
-
+  
   data.frame(
     gene_family = g,
     gains = gains,
@@ -141,9 +139,9 @@ gain_loss_boot_results <- foreach(
   trait <- trait[core_tree_resolved$tip.label]
   
   fits <- lapply(boot_trees, function(tree){
-                try(ace(trait, tree,
-                 type="discrete", model="ARD"),
-             silent = TRUE)})
+    try(ace(trait, tree,
+            type="discrete", model="ARD"),
+        silent = TRUE)})
   
   # Catch failed fits
   check_fit <- lapply(fits, function(fit){
@@ -178,7 +176,7 @@ gain_loss_boot_results <- foreach(
     
     states
   })
-
+  
   all_gains_losses <- lapply(seq_along(boot_trees[keep_trees]), function(i){
     
     edges <- boot_trees[[i]]$edge
@@ -196,13 +194,13 @@ gain_loss_boot_results <- foreach(
     data.frame(gains, losses)
     
   })
-
+  
   all_gains_losses <- rbindlist(all_gains_losses)
   
   all_gains_losses$gene_family = g
   
   all_gains_losses$rep = 1:nrow(all_gains_losses)
-
+  
   all_gains_losses
 }
 

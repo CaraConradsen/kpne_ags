@@ -25,11 +25,11 @@ invisible(sapply(
 # remotes::install_version("dplyr", version = "1.1.3")
 # Package dependencies
 # this function attaches libraries, but also checks and installs missing packages
-packages <- c("ape","Biostrings","BSgenome", "doParallel","data.table", "MASS", "yyjsonr",
+packages <- c("ape","Biostrings","BSgenome", "doParallel","data.table", "castor", "MASS", "yyjsonr",
               "eulerr","foreach","GenomicRanges","gUtils","ggnewscale", "RCy3",
-              "msaR","shape", "ade4", "genoPlotR","MASS","phangorn",
+              "msaR","shape", "ade4", "genoPlotR","MASS","phangorn","plotrix",
               "ggiraph","htmlwidgets","igraph", "jsonlite","plyranges","pegas", "phyloseq", "VennDiagram", 
-              "phytools","RColorBrewer","rtracklayer", "seqinr","stats","stringr","treeio", "vegan",
+              "phytools","RColorBrewer","rtracklayer", "seqinr","stats","stringr", "vegan",
               "vioplot", "homoplasyFinder")
 
 # load in functions, uses BiocManager::install which handles both 

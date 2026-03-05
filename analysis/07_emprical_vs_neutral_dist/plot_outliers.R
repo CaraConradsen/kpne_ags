@@ -1,102 +1,5 @@
-# Get AG piS (age)
 
-# input require data sets
-# ags
-
-pangraph_anno <- fread(paste0(outdir_dat, "/AGs_post_cat.csv"))[multi_gain!=1]
-
-# temp_pangraph_anno <- copy(pangraph_anno)
-# 
-# temp_pangraph_anno[, n:=.N, gene_family]
-# 
-# temp_pangraph_anno <- temp_pangraph_anno[n!=1]
-# 
-# list_unique_ags = unique(temp_pangraph_anno[ag_type!="core", gene_family]) 
-# 
-# # remove paralogs (retain genes with only _1 or no underscore)
-# 
-# list_unique_ags = c(grep("_", list_unique_ags, invert = TRUE, value = TRUE),
-#                     grep("_1", list_unique_ags, value = TRUE))# 14,330 ags
-
-# number of genomes in pangenome
-tot_pangenome_size = length(unique(pangraph_anno$geno_id))
-
-list_unique_ags = unique(pangraph_anno$gene_family)
-# loop
-# directory of algined genes
-gene_align_loc = "C:/Users/carac/Dropbox/Vos_Lab/kpne_ags/input_data/PIRATE_485_lng_rds_out/feature_sequences/"
-
-
-# start timer
-start.time <- Sys.time()
-
-# Set up parallel backend
-cl <- makeCluster(num_cores)
-registerDoParallel(cl)
-
-# Parallel foreach loop
-ag_age_dt <- foreach(i = list_unique_ags, 
-                        .combine = rbind, 
-                        .packages = c("Biostrings","ape","pegas","data.table")) %dopar% {
-                          
-                          # Read the FASTA, skip if missing
-                          temp_string <- tryCatch(
-                            readDNAStringSet(paste0(gene_align_loc, i, ".nucleotide.fasta")),
-                            error = function(e) return(NULL)
-                          )
-                          
-                          # skip if file is missing
-                          if (is.null(temp_string)) return(NULL)
-                          
-                          #  Subset to loci present in pangraph annotation
-                          sampled_loci = pangraph_anno[gene_family == i, locus_tag]
-                          
-                          # Subset by sequence names
-                          temp_string <- temp_string[names(temp_string) %in% sampled_loci]
-                          
-                          # Skip if no sequence, ORFan or core gene
-                          if (length(temp_string) == 0) return(NULL)
-                          if (length(temp_string) %in% c(1, tot_pangenome_size)) return(NULL)
-                          
-                          # save k strains
-                          loc_freq = length(temp_string)
-                          
-                          # Convert to "alignment" class
-                          alignment_obj <- list(
-                            nb = length(temp_string),
-                            nam = names(temp_string),
-                            seq = as.character(temp_string),  # must be character vector
-                            com = NULL
-                          )
-                          class(alignment_obj) <- "alignment"
-                          
-                          kaks_result <- try(seqinr::kaks(alignment_obj), silent = TRUE)
-                          
-                          if (inherits(kaks_result, "try-error") || is.null(kaks_result$ks)) {
-                            max_ks <- NA
-                          } else {
-                            max_ks <- max(kaks_result$ks, na.rm = TRUE)
-                          }
-                          
-                          #return value
-                          data.frame(gene_family = i, max_ks = max_ks, freq = loc_freq)
-                          
-
-                        }
-
-
-# get duration
-end.time <- Sys.time()
-end.time - start.time# Time difference of 49.81543 secs
-
-# Stop cluster when done
-stopCluster(cl)
-
-setDT(ag_age_dt)
-
-fwrite(ag_age_dt, paste0(outdir_dat, "/ag_age_dt.csv"))
-# ag_age_dt <-fread(paste0(outdir_dat, "/ag_age_dt.csv"))
-
+ag_age_S_dt <-fread(paste0(outdir_dat, "/ag_age_S_dt.csv"))
 
 
 # Examine outliers --------------------------------------------------------
@@ -237,5 +140,4 @@ text(3.25, 30.25, cex = 0.95, col = "grey30",
      "balancing selection candidate", xpd = TRUE)
 
 dev.off()
-
 

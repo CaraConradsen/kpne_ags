@@ -3,17 +3,6 @@
 pan_anno <- fread(paste0(outdir_dat, "/pangenome_anno.csv"))
 
 
-# Assign Core vs accessory ------------------------------------------------
-
-n_genomes = length(unique(pan_anno[, geno_id]))
-
-
-pan_anno[, ag_type := fcase(number_genomes < 0.99 * n_genomes & number_genomes >=  0.95 * n_genomes, "soft",
-                            number_genomes < 0.95 * n_genomes & number_genomes >=  0.15 * n_genomes, "shell",
-                            number_genomes < 0.15 * n_genomes, "cloud",
-                            default = "core")]
-
-
 # plot distributions ------------------------------------------------------
 
 # pie dat
@@ -47,83 +36,15 @@ png(paste0(outdir_fig,"/core_pangenome_stats.png"),
 
 
 # plots
-mat <- matrix(c(1,1,2,rep(3,3)), byrow =TRUE, ncol = 3)
+mat <- matrix(c(rep(1,3),2,2,3), byrow =TRUE, ncol = 3)
 
 
-layout(mat, widths = c(0.75,0.75,1),
-       heights = c(1,2))
-
-# gene distribution
-par(mar = c(6,6,1,0.5))
-with(freq_dat,
-     barplot(log10_n~number_genomes,
-             border = NA,
-             yaxt = "n",
-             col = "grey40",
-             ylab = expression("log"[10]~"Number of genes"),
-             xlab = "Number of genomes"))
-
-abline(h=0)
-axis(side=2, at = seq(0,3.5,0.5),
-     labels = sprintf("%.1f", seq(0,3.5,0.5)),
-     las = 2)
-
-usr <- par("usr")
-
-text(x = usr[1]- 55, y = usr[4], labels = "a", 
-     xpd = TRUE, font = 2,cex = 1.5)
-
-# Green-themed colours
-blue_palette <- c("grey80", "lightskyblue3",  "steelblue", "dodgerblue")  # dark to light greens
-
-par(mar = c(0.1,0.1,1,6))
-order_idx <- c(1,2,3,4)
-# Create pie chart
-with(pie_dat,
-     pie(n[order_idx],
-         labels = c(lab[order_idx][1:3], ""),
-         col = blue_palette,
-         main = "",
-         border = "#fafaf8",
-         clockwise = TRUE,
-         init.angle = 90
-     )
-)
-
-
-# adjust label
-angle_radians <- 2 * pi * 14258/2 / sum(pie_dat$n)
-
-
-# Radius at which to place labels (1 is on the circumference)
-r <- -0.9
-x_pos <- r * cos(angle_radians)
-y_pos <- r * sin(angle_radians)
-
-
-# Add text at custom positions
-text(x_pos-0.05, y_pos, xpd=TRUE, pos =4,
-     labels = pie_dat[ag_type=="cloud", lab])
-
-r <- -0.8
-x_pos1 <- r * cos(angle_radians)
-y_pos1 <- r * sin(angle_radians)
-
-r <- -0.85
-x_pos2 <- r * cos(angle_radians)
-y_pos2 <- r * sin(angle_radians)
-
-segments(x_pos1,y_pos1,x_pos2,y_pos2)
-
-usr <- par("usr")
-
-text(x = usr[1]+.1, y = usr[4], labels = "b", 
-     xpd = TRUE, font = 2,cex = 1.5)
+layout(mat, widths = c(1,0.75,0.75),
+       heights = c(2,1))
 
 # Add phylogenetic tree
 par(mar = c(2,1,3,1))
-tree <- read.tree("C:/Users/carac/Dropbox/Vos_Lab/kpne_ags/input_data/pangraph/gub_graph.node_labelled.final_tree.tre") 
-
+tree <- read.tree("./input_data/bootstrapped_gubbins/tmp8yl_0c9w/RAxML_bestTree.core_genome_aln.iteration_20")
 ST_groups <- unique(pan_anno[,.(geno_id, ST)])
 
 # get colours
@@ -166,7 +87,7 @@ plot(tree,
 lp <- get("last_plot.phylo", envir = .PlotPhyloEnv)
 ntips <- Ntip(tree)
 
-# Blue filled tip points
+# coloured filled tip points
 points(lp$xx[1:ntips],
        lp$yy[1:ntips],
        pch = 16,
@@ -245,38 +166,38 @@ for(i in unique(ST_groups$ST)){
   
   for(block in blocks){
     draw_clade_arc(block, col="grey30", lwd=2, 
-                   label_text=ifelse(i!="ST512", i, ""))
+                   label_text=i)#ifelse(i!="ST512", i, ""))
   }
   
-  if(i=="ST512"){
-    split_idx <- idx[ceiling(length(idx)/2)]
-    xpos <- lp$xx[split_idx] * 1.18
-    ypos <- lp$yy[split_idx]
-    
-    label_angle <- atan2(ypos, xpos)
-    angle_deg <- label_angle * 180 / pi
-    
-    # Flip text if on left side
-    on_left <- xpos < 0
-    if(on_left){
-      angle_deg <- angle_deg + 180
-      adj_val <- c(1, 0.5)  # right-justified
-    } else {
-      adj_val <- c(0, 0.5)  # left-justified
-    }
-    
-    text(x = xpos, y = ypos,
-         labels = "ST512",
-         srt = angle_deg,
-         adj = adj_val,
-         cex = 0.5,
-         font = 2)
-    
-    segments(xpos+0.01,ypos-0.02,xpos+0.01,ypos+0.03,
-             col = "grey30",
-             lwd=2, lend=2)
-    
-  }
+  # if(i=="ST512"){
+  #   split_idx <- idx[ceiling(length(idx)/2)]
+  #   xpos <- lp$xx[split_idx] * 1.18
+  #   ypos <- lp$yy[split_idx]
+  #   
+  #   label_angle <- atan2(ypos, xpos)
+  #   angle_deg <- label_angle * 180 / pi
+  #   
+  #   # Flip text if on left side
+  #   on_left <- xpos < 0
+  #   if(on_left){
+  #     angle_deg <- angle_deg + 180
+  #     adj_val <- c(1, 0.5)  # right-justified
+  #   } else {
+  #     adj_val <- c(0, 0.5)  # left-justified
+  #   }
+  #   
+  #   text(x = xpos, y = ypos,
+  #        labels = "ST512",
+  #        srt = angle_deg,
+  #        adj = adj_val,
+  #        cex = 0.5,
+  #        font = 2)
+  #   
+  #   segments(xpos+0.01,ypos-0.02,xpos+0.01,ypos+0.03,
+  #            col = "grey30",
+  #            lwd=2, lend=2)
+  #   
+  # }
   
 }
 
@@ -285,7 +206,75 @@ usr <- par("usr")
 
 add.scale.bar()
 
-text(x = usr[1]+0.2, y = usr[4]-0.3, labels = "c", 
+text(x = usr[1]+0.2, y = usr[4]-0.3, labels = "a", 
+     xpd = TRUE, font = 2,cex = 1.5)
+
+
+# gene distribution
+par(mar = c(6,6,1,0.5))
+with(freq_dat,
+     barplot(log10_n~number_genomes,
+             border = NA,
+             yaxt = "n",
+             col = "grey40",
+             ylab = expression("log"[10]~"Number of genes"),
+             xlab = "Number of genomes"))
+
+abline(h=0)
+axis(side=2, at = seq(0,3.5,0.5),
+     labels = sprintf("%.1f", seq(0,3.5,0.5)),
+     las = 2)
+
+usr <- par("usr")
+
+text(x = usr[1]- 55, y = usr[4], labels = "b", 
+     xpd = TRUE, font = 2,cex = 1.5)
+
+# Green-themed colours
+blue_palette <- c("grey80", "lightskyblue3",  "steelblue", "dodgerblue")  # dark to light greens
+
+par(mar = c(0.1,0.1,1,6))
+order_idx <- c(1,2,3,4)
+# Create pie chart
+with(pie_dat,
+     pie(n[order_idx],
+         labels = c(lab[order_idx][1:3], ""),
+         col = blue_palette,
+         main = "",
+         border = "#fafaf8",
+         clockwise = TRUE,
+         init.angle = 90
+     )
+)
+
+
+# adjust label
+angle_radians <- 2 * pi * 14258/2 / sum(pie_dat$n)
+
+
+# Radius at which to place labels (1 is on the circumference)
+r <- -0.9
+x_pos <- r * cos(angle_radians)
+y_pos <- r * sin(angle_radians)
+
+
+# Add text at custom positions
+text(x_pos-0.05, y_pos, xpd=TRUE, pos =4,
+     labels = pie_dat[ag_type=="cloud", lab])
+
+r <- -0.8
+x_pos1 <- r * cos(angle_radians)
+y_pos1 <- r * sin(angle_radians)
+
+r <- -0.85
+x_pos2 <- r * cos(angle_radians)
+y_pos2 <- r * sin(angle_radians)
+
+segments(x_pos1,y_pos1,x_pos2,y_pos2)
+
+usr <- par("usr")
+
+text(x = usr[1]+.1, y = usr[4], labels = "c", 
      xpd = TRUE, font = 2,cex = 1.5)
 
 dev.off()

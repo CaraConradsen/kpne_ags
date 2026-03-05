@@ -397,6 +397,15 @@ fwrite(pan_anno, paste0(outdir_dat, "/pangenome_anno.csv"))
 
 
 
+# Add anchors and AGs back to main anno -----------------------------------
+# pirate_anno <- fread(paste0(outdir_dat, "/all_pirate_anno_cogs.csv"))
 
+id_msu_ags <- unique(fread(paste0(outdir_dat, "/msu_regions_anchored.csv"),
+                       select = c("fus_locus_tag","geno_id",
+                                  "ag_type", "anchor","msu",
+                                  "acrs_msu", "acrs_jun")))
 
+pirate_anno <- merge(pirate_anno, id_msu_ags,
+                     all.x = TRUE, by = c("fus_locus_tag","geno_id"))
 
+fwrite(pirate_anno, paste0(outdir_dat, "/all_pirate_anno_full.csv"))

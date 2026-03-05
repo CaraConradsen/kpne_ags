@@ -194,7 +194,7 @@ core_dt <- nodes_dt[count == n_strains & n_strains == max_genomes,]
 # Plot Core MSU order ---------------------------------------------------------------
 
 # Left panel: Phylogenetic tree 
-core_gub_tree_geno <- read.tree("./input_data/pangraph/gub_graph.node_labelled.final_tree.tre") 
+core_gub_tree_geno <- read.tree("./input_data/bootstrapped_gubbins/tmp8yl_0c9w/RAxML_bestTree.core_genome_aln.iteration_20")
 
 core_gub_tree <- core_gub_tree_geno
 
@@ -389,7 +389,7 @@ sq_size <- 1       # both width and height = 1
 focal_geno = c("SPARK_1332_C1","SPARK_1006_C1",
                unordered_msu_genos, "SPARK_587_C1")
 
-png(filename = paste0(outdir_fig, "/msu_subset260_unordered_msu.png"),
+png(filename = paste0(outdir_fig, "/msu_subset260_unordered_msu_labelled.png"),
     width = 9.69, height = 10.74, type = "cairo",
     units = "in",res = 300)
 
@@ -428,23 +428,25 @@ axis(side = 2, at = barp_y_lim,
 # phylogenetic tree
 sub_tree <- keep.tip(core_gub_tree_geno, focal_geno)
 
+sub_tree$tip.label <- gsub("SPARK_", "", sub_tree$tip.label)
+
 ntip <- Ntip(sub_tree)
 
-par(xpd = TRUE, mar = c(4,5,0.2,0))
-plot(sub_tree,
-     edge.width = 2,
+par(xpd = TRUE, mar = c(4,1,1.2,0))
+plot(sub_tree,cex=0.65,
      y.lim = c(3.25, ntip + 0.25),
-     x.lim = c(5000, max(node.depth.edgelength(sub_tree))+100),
-     show.tip.label = FALSE,
-     edge.color = "darkgrey",
-     tip.color = "dodgerblue4",
-     font = 1,
-     cex = 0.65,
-     # no.margin = TRUE,
-     main="")
+     #      x.lim = c(5, max(node.depth.edgelength(sub_tree))+100),
+     #      font = 1,
+     #      cex = 0.65,
+     align.tip.label = TRUE,
+     edge.width = 2.5,
+     show.tip.label = TRUE,
+     edge.color = "grey40",
+     tip.color = "white")
+
 
 # Create empty plot
-par(mar = c(0,6,0,1))
+par(mar = c(0,6,1,1))
 plot(
   0, 0, type = "n",
   bty= "n",
@@ -455,6 +457,9 @@ plot(
   yaxt = "n",
   xaxt = "n"
 )
+
+# refresh tip labels
+sub_tree <- keep.tip(core_gub_tree_geno, focal_geno)
 
 t=1
 # Draw squares (no gaps)
@@ -477,11 +482,17 @@ for (i in sub_tree$tip.label) {
   label_txt <- if (!i %in% c("SPARK_1006_C1","SPARK_587_C1","SPARK_1332_C1")) unique(dat$geno_id) else paste0(unique(dat$geno_id), "\n(consensus)")
   
   axis(side = 2, tick = FALSE, las = 2,
-       cex.axis = 0.85,
+       cex.axis = 0.75,
        at = y, 
        labels = label_txt)
   t=t+1
 }
+
+axis(side = 3,  cex.axis = 0.5,
+     at = seq(0.5,(nblocks * sq_size)-0.5, 1),
+     labels = strsplit(gsub("MSU_","", most_common_ord_msu), ",")[[1]],
+     line = -2.2, tick = FALSE)
+
 
 dev.off()
 
