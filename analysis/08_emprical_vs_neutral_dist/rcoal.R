@@ -76,7 +76,7 @@ res <- simulate_freq_vs_diversity(n_genomes = tot_pangenome_size, n_trees = n_si
 
 # get duration
 end.time <- Sys.time()
-end.time - start.time# Time difference of 24.2675 secs
+end.time - start.time# 260 genomes, 10,000; Time difference of 5.397505 mins
 
 # Normalise/scaled results by mean freq subtree_br_len
 res[, t_hat := subtree_br_len/mean(subtree_br_len), freq]
@@ -84,7 +84,7 @@ res[, t_hat := subtree_br_len/mean(subtree_br_len), freq]
 fwrite(res, paste0(outdir_dat,"/neutral_sim_260_ntree_10000.csv"))
 
 # Scale trees -------------------------------------------------------------
-# res <- fread(paste0(outdir_dat,"/neutral_sim_214_ntree_10000.csv"))
+# res <- fread(paste0(outdir_dat,"/neutral_sim_260_ntree_10000.csv"))
 
 # from get_ag_pis.R
 ag_age_S_dt <-fread(paste0(outdir_dat, "/ag_age_S_dt.csv"))
@@ -100,17 +100,34 @@ pi_emp_k_set_1 = ag_age_S_dt[gene_family %chin% set_1_ags$gene_family, .(mean_Sm
 pi_emp_k_set_2 = ag_age_S_dt[gene_family %chin% set_2_ags$gene_family, .(mean_Sm = mean(Sm)), by = freq]
 
 # Anchor genealogy estimates by empirical means ---------------------------
+res_1 <- copy(res)
+res_2 <- copy(res)
 
 # Join pi_emp_k onto res by freq and create new column
-res[pi_emp_k, on = "freq", pi_sim := t_hat * mean_Sm]
+res_1[pi_emp_k_set_1, on = "freq", pi_sim := t_hat * mean_Sm]
+res_2[pi_emp_k_set_2, on = "freq", pi_sim := t_hat * mean_Sm]
 
 # Outlier detections: summarise the neutral distribution per frequency --------
 
-neutral_summary <- res[, .(
+neutral_summary_1 <- res_1[pi_sim <= 1,.(
   pi_lower = quantile(pi_sim, 0.025, na.rm = TRUE),
   pi_median = median(pi_sim, na.rm = TRUE),
   pi_upper = quantile(pi_sim, 0.975, na.rm = TRUE),
   iqr = IQR(pi_sim, na.rm = TRUE, type = 7)
 ), by = freq]
+
+neutral_summary_1$set = 1
+
+neutral_summary_2 <- res_2[pi_sim <= 1,.(
+  pi_lower = quantile(pi_sim, 0.025, na.rm = TRUE),
+  pi_median = median(pi_sim, na.rm = TRUE),
+  pi_upper = quantile(pi_sim, 0.975, na.rm = TRUE),
+  iqr = IQR(pi_sim, na.rm = TRUE, type = 7)
+), by = freq]
+
+neutral_summary_2$set = 2
+
+neutral_summary <- rbind(neutral_summary_1[!is.na(pi_median)],
+                         neutral_summary_2[!is.na(pi_median)])
 
 fwrite(neutral_summary, paste0(outdir_dat, "/neutral_summary.csv"))

@@ -39,3 +39,27 @@ COG_dt <- data.frame(
 )
 
 setDT(COG_dt)
+
+# add descriptons
+
+COG_dt[COG_letter %chin% c("J", "K", "L", "A", "B"), 
+       desc := "Information storage and processing"]
+
+COG_dt[COG_letter %chin% c("D","M","N","O","T","U","V", "W", "Y", "Z"), 
+       desc := "Cellular processes and signalling"]
+
+COG_dt[COG_letter %chin% c("C","E","F","G","H","I","P","Q"), 
+       desc := "Metabolism"]
+
+COG_dt[is.na(desc), desc := ""]
+
+COG_dt[, desc := factor(desc, 
+                        levels = c("Information storage and processing",
+                                   "Cellular processes and signalling",
+                                   "Metabolism", ""))]
+
+setorderv(COG_dt, cols = c("desc", "COG_num"))
+
+COG_dt$broad_ord = 1:26
+
+COG_dt[, desc := as.character(desc)]
