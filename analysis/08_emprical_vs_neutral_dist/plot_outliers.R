@@ -2,8 +2,11 @@
 pangraph_anno <- fread(paste0(outdir_dat, "/all_pirate_anno_full.csv"), 
                        select = c("geno_id", "gene_family", "locus_tag", "fus_locus_tag", 
                                   "number_genomes", "start","end",
-                                  "strand","ST","ag_type", "COG_funct_cat", 
+                                  "strand","ST","ag_type", "egng_cog", 
                                   "consensus_gene_name", "consensus_product"))
+
+# rename eggnog_cog to COG_funct_cat
+setnames(pangraph_anno, old = "egng_cog", new = "COG_funct_cat")
 
 ag_age_S_dt <-fread(paste0(outdir_dat, "/ag_age_S_dt.csv"))
 
@@ -113,6 +116,7 @@ ag_age_S_dt_set2[pangraph_anno[,.(gene_family, COG_funct_cat)], on = "gene_famil
 set1_cogs <- ag_age_S_dt_set1[outlier==1 & COG != "" & mean_ks <= 1, .(D, COG, gene_family)]
 set2_cogs <- ag_age_S_dt_set2[outlier==1 & COG != "" & mean_ks <= 1, .(D, COG, gene_family)] 
 
+nrow(set1_cogs); nrow(set2_cogs)
 
 set1_cogs <- set1_cogs[, .(COG_letter = unlist(strsplit(COG, ""))), by = c("gene_family","D")]
 set2_cogs <- set2_cogs[, .(COG_letter = unlist(strsplit(COG, ""))), by = c("gene_family","D")]

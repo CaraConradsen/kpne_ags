@@ -1,26 +1,11 @@
-
-# Import ASR and CI -------------------------------------------------------
+# Import PAR and CI -------------------------------------------------------
 ci <- fread(paste0(outdir_dat,"/consistencyindex_syn.csv"))
 gl <- fread(paste0(outdir_dat,"/maximum_parsimony_gain_loss_results.csv"))
 colnames(gl)[3:5] <- c("par_gains","par_losses","par_anc_state")
-# ace <- fread(paste0(outdir_dat, "/gain_loss_results_syn.csv"))
-# colnames(ace)[2:4] <- c("ace_gains","ace_losses","ace_anc_state")
-# # import boot and get summary
-# gain_boot <- fread(paste0(outdir_dat, "/gain_loss_boot_results.csv"))
-# 
-# gain_boot_sum <- gain_boot[, .(
-#   median_gain = as.numeric(median(gains, na.rm = TRUE)),
-#   gain_ci_lo = as.numeric(quantile(gains, 0.025, na.rm = TRUE)),
-#   gain_ci_up = as.numeric(quantile(gains, 0.975, na.rm = TRUE)),
-#   median_loss = as.numeric(median(losses, na.rm = TRUE)),
-#   loss_ci_lo = as.numeric(quantile(losses, 0.025, na.rm = TRUE)),
-#   loss_ci_up = as.numeric(quantile(losses, 0.975, na.rm = TRUE)),
-#   reps = max(rep)
-# ), by = gene_family]
 
-# get ags
+# get pangraph synteny info
 msu_regions_anchored <- fread(paste0(outdir_dat, "/msu_regions_anchored.csv"))
-ag_homo_dat <- msu_regions_anchored[ag_type != "core"][number_genomes != 1][!grepl("_",gene_family)]# [acrs_msu!=1][acrs_jun != 1]
+ag_homo_dat <- msu_regions_anchored[ag_type != "core"][number_genomes != 1]#[!grepl("_",gene_family)][acrs_msu!=1][acrs_jun != 1]
 
 # remove anchor dups
 ag_homo_dat <- unique(ag_homo_dat[,.(gene_family, number_genomes, anchor, acrs_msu, acrs_jun)])
@@ -31,19 +16,9 @@ syntenic_key <- ag_homo_dat[!gene_family %chin% nonsyntenic_loci, .(
   syn_jun = ifelse(all(anchor != ""), 1, 0)
 ), by = gene_family]
 
-# # Key
-# 0 = at_least_one_unknown
-# 1 = all_known
-# 2 = non-syntenic
-
-# put data.frames together
+# put data.frames together ------------------------------------------------
 
 phylo_info = merge(ci, gl, by = "gene_family")
-
-# phylo_info = merge(phylo_info, ace, by = "gene_family")
-
-# phylo_info = merge(phylo_info, gain_boot_sum, 
-#                    all.x = TRUE, by = "gene_family")
 
 # add gene frequency
 phylo_info = merge(phylo_info, unique(ag_homo_dat[,.(gene_family, number_genomes)]),
@@ -56,12 +31,36 @@ phylo_info = merge(phylo_info, syntenic_key,
 # fix nonsytenic
 phylo_info[is.na(syn_jun), syn_jun := 2]
 
-# Retain genes for set 2
+# # Key
+# 0 = at_least_one_unknown
+# 1 = all_known (syntenic)
+# 2 = non-syntenic
 
-# fwrite(phylo_info, paste0(outdir_dat, "/phylo_info.csv"))
-# fwrite(phylo_info[syn_jun!=2, .(gene_family)], paste0(outdir_dat, "/set_1_names.csv"))
+# Remove paralogs ---------------------------------------------------------
 
-# Plot homoplasy vs parsimony ---------------------------------------------
+paralog_ags <- unique(fread(paste0(outdir_dat, "/all_pirate_anno_full.csv"), 
+                            select = c("gene_family",  "average_dose")))[average_dose > 1]
+
+
+phylo_info <- phylo_info[!gene_family %chin% paralog_ags$gene_family]
+
+
+# Identify pi s outliers --------------------------------------------------
+
+piS_3IQR_outliers_ags <- fread(paste0(outdir_dat, "/piS_3IQR_outliers.csv"))
+
+phylo_info[, pis_out := fcase(gene_family %chin% piS_3IQR_outliers_ags$gene_family, 1,
+                             default = 0)]
+
+# Export info -------------------------------------------------------------
+
+fwrite(phylo_info, paste0(outdir_dat, "/phylo_info.csv"))
+
+
+
+
+
+# Plot Ci/parsimony against gene frequency (Gambin's plot) --------------------------------------
 
 png(paste0(outdir_fig,"/ci_vs_par_gains.png"),
     width = 16, height = 11, units = "cm", res = 300,

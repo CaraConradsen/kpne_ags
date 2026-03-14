@@ -9,7 +9,7 @@ core_tree_resolved <- multi2di(core_tree)
 # Get remaining accessory genes after synteny analysis --------------------
 msu_regions_anchored <- fread(paste0(outdir_dat, "/msu_regions_anchored.csv"))
 
-ag_homo_dat <- msu_regions_anchored[ag_type != "core"][number_genomes != 1][!grepl("_",gene_family)]#[acrs_msu!=1][acrs_jun != 1]
+ag_homo_dat <- msu_regions_anchored[ag_type != "core"][number_genomes != 1]#[acrs_msu!=1][acrs_jun != 1]
 
 # create presence/absence for gene_families -------------------------------
 # Create binary ag presence_absence data.table 

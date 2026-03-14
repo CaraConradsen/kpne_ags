@@ -5,14 +5,12 @@
 
 pangraph_anno <- fread(paste0(outdir_dat, "/all_pirate_anno_full.csv"), 
                        select = c("geno_id", "gene_family", "locus_tag", "fus_locus_tag", 
-                                  "number_genomes", "start","end",
+                                  "number_genomes", "start","end", "average_dose",
                                   "strand","ST","ag_type"))
 
 
-# estimates for set 1
-set_1_ags = fread(paste0(outdir_dat, "/set_1_names.csv"))
-
-pangraph_anno <- pangraph_anno[gene_family %chin% set_1_ags$gene_family]
+# remove estimates of core, paralogs and singletons
+pangraph_anno <- pangraph_anno[ag_type!="core"][number_genomes > 1][average_dose <= 1]
 
 # number of genomes in pangenome
 tot_pangenome_size = length(unique(pangraph_anno$geno_id))
@@ -165,8 +163,138 @@ ag_age_S_dt[, Sm := S / m]
 # ag_age_S_dt <- merge(ag_age_S_dt, unique(pangraph_anno[,.(gene_family, number_genomes)]), all.x = TRUE, by = "gene_family")
 # ag_age_S_dt[freq != number_genomes]# should be nothing
 
+
+# Calcualte piS outliers --------------------------------------------------
+
+IQR_threshold = median(ag_age_S_dt$mean_ks) + (IQR(ag_age_S_dt$mean_ks) * 3)
+
+ag_age_S_dt[, pi_out := fcase(mean_ks > IQR_threshold, 1,
+                              default = 0)]
+
+fwrite(ag_age_S_dt[mean_ks > IQR_threshold, .(gene_family)],
+       paste0(outdir_dat, "/piS_3IQR_outliers.csv"))
+
+
+
+# Downsample genes using a hypergeometric distribution ----------------------------------------
+
+# Define standardised target length (round up to 700)
+m_target <- median(ag_age_S_dt[pi_out==0]$m)+1
+
+
+# For genes LONGER than m_target, downsample segregating sites
+# by drawing m_target sites without replacement from m total sites,
+# of which S are segregating — i.e. sample from hypergeometric
+
+downsample_segsites <- function(S, m, m_target) {
+  if (m <= m_target) {
+    # Gene is at or below target length — no downsampling needed
+    return(S)
+  }
+  # Draw one realisation from the hypergeometric
+  rhyper(nn = 1,
+         m  = S,
+         n  = m - S,
+         k  = m_target)
+}
+
+set.seed(42)
+
+ag_age_S_dt$S_std <- mapply(
+  downsample_segsites,
+  S       = ag_age_S_dt$S,
+  m       = ag_age_S_dt$m,
+  m_target = m_target
+)
+
+# Standardised length column, all genes now treated as m_target long
+ag_age_S_dt$m_std <- ifelse(ag_age_S_dt$m >= m_target, 
+                            m_target, 
+                            ag_age_S_dt$m)
+
+
+# Calculate segregating site per site using std measures
+# m is gene length, S is number of segregating sites
+ag_age_S_dt[, Sm_std := S_std / m_std]
+
+# Export observes seg sites, gene length and piS --------------------------
+
 fwrite(ag_age_S_dt, paste0(outdir_dat, "/ag_age_S_dt.csv"))
 # ag_age_S_dt <-fread(paste0(outdir_dat, "/ag_age_S_dt.csv"))
 
 
+
+
+# Examine gene length -----------------------------------------------------
+IQR_gene_threshold = median(ag_age_S_dt[pi_out==0]$m) + (IQR(ag_age_S_dt[pi_out==0]$m) * 3)
+
+ag_age_S_dt[, genel_out := fcase(m > IQR_gene_threshold, 1,
+                                 default = 0)]
+
+par(mfrow = c(2,1))
+
+h1 <- hist(ag_age_S_dt$m,
+           breaks = 50,
+           main ="",
+           col="dodgerblue",
+           border = "dodgerblue4",
+           xlab = "Gene length")
+
+abline(v = IQR_gene_threshold, lwd =1.1, col = "red",
+       xpd = FALSE)
+
+u <- par("usr")
+
+text(u[2],u[4], expression("With"~pi[S]~"outliers"),
+     pos = 2,
+     xpd = TRUE)
+
+hist(ag_age_S_dt[pi_out==0]$m,
+     breaks = 50,
+     xlim = c(0, max(h1$breaks)),
+     main ="",
+     col="dodgerblue",
+     border = "dodgerblue4",
+     xlab = "Gene length")
+
+u <- par("usr")
+
+text(u[2],u[4], expression("Without"~pi[S]~"outliers"),
+     pos = 2,
+     xpd = TRUE)
+
+abline(v = IQR_gene_threshold, lwd =1.1, col = "red",
+       xpd = FALSE)
+
+par(mfrow = c(1,1))
+
+with(ag_age_S_dt[pi_out==0],
+     plot(freq, m,
+          pch = 16,
+          bty = "L", 
+          ylab = "Gene length",
+          xlab = "Genome frequency",
+          col = rgb(.1,.1,.1,alpha = 0.4)))
+
+abline(h = median(ag_age_S_dt[pi_out==0, m]),
+       lty = 2, 
+       lwd =1.1, col = "red",
+       xpd = FALSE)
+
+text(max(ag_age_S_dt$freq)/2,
+     median(ag_age_S_dt[pi_out==0, m]),
+     "median",
+     pos = 3, col = "red"
+)
+
+abline(h = IQR_gene_threshold,
+       lty = 2, 
+       lwd =1.1, col = "dodgerblue4",
+       xpd = FALSE)
+
+text(max(ag_age_S_dt$freq)/2,
+     IQR_gene_threshold,
+     "median + 3*IQR",
+     pos = 3, col = "dodgerblue4"
+)
 

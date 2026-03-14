@@ -13,7 +13,8 @@ core_tree_resolved <- multi2di(core_tree)
 # Get remaining accessory genes after synteny analysis --------------------
 msu_regions_anchored <- fread(paste0(outdir_dat, "/msu_regions_anchored.csv"))
 
-ag_homo_dat <- msu_regions_anchored[ag_type != "core"][number_genomes != 1][!grepl("_",gene_family)]#[acrs_msu!=1][acrs_jun != 1]
+ag_homo_dat <- msu_regions_anchored[ag_type != "core"][number_genomes != 1]#[!grepl("_",gene_family)][acrs_msu!=1][acrs_jun != 1]
+
 
 # create presence/absence for gene_families -------------------------------
 # Create binary ag presence_absence data.table 
@@ -26,6 +27,17 @@ ag_presence_absence <- dcast(
   fun.aggregate = length,
   value.var = "gene_family"
 )
+
+# make sure everything is binary
+# Only check the presence/absence columns (skip 'start' and 'end')
+presence_cols <- 3:ncol(ag_presence_absence)
+
+# Find any values > 1
+any_over_1 <- any(ag_presence_absence[, ..presence_cols] > 1)
+
+if(isTRUE(any_over_1)){
+  ag_presence_absence[, (3:ncol(ag_presence_absence)) := lapply(.SD, function(x) as.integer(x>0)), .SDcols = 3:ncol(ag_presence_absence)]
+}
 
 # make dummy regions
 dummy_regions <- data.frame(
@@ -64,7 +76,7 @@ treeFile <- list.files(outdir_homoplasy,
                        pattern = ".tree")
 
 system2("Rscript",
-        args = c("./analysis/06_id_HGT_ags/run_homoplasy.R",
+        args = c("./analysis/07_hgt_synteny_parsimony/run_homoplasy.R",
                  presenceAbsenceFile,
                  treeFile,
                  paste0(outdir_homoplasy,"/")))
@@ -88,6 +100,10 @@ CI_est <- merge(CI_est,
 
 # save data 
 fwrite(CI_est[,-c(1,2)], paste0(outdir_dat, "/consistencyindex_syn.csv"))
+
+
+
+# examine ci --------------------------------------------------------------
 
 
 grping_dat <- unique(ag_homo_dat[,.(gene_family, anchor, number_genomes)])

@@ -1,20 +1,22 @@
 
-id_ags <- unique(fread(paste0(outdir_dat, "/msu_regions_anchored.csv"),
-                select = c("gene_family","number_genomes",
-                           "ag_type", "acrs_msu", "acrs_jun")))
-
+id_ags <- unique(fread(paste0(outdir_dat, "/all_pirate_anno_full.csv"), 
+                       select = c("gene_family","number_genomes", "average_dose", 
+                                  "ag_type", "acrs_msu", "acrs_jun")))
 
 dt <- copy(id_ags)
 
-# id set 2 outliers
-set_1_ags = fread(paste0(outdir_dat, "/set_1_names.csv"))
+# pi outliers
+piS_3IQR_outliers <- fread(paste0(outdir_dat, "/piS_3IQR_outliers.csv"))
 
-dt[, set := fcase(gene_family %chin% set_1_ags$gene_family,1,
-                   default = 0)]
-
+# # id set 2 outliers
+# set_1_ags = fread(paste0(outdir_dat, "/set_1_names.csv"))
+# 
+# dt[, set := fcase(gene_family %chin% set_1_ags$gene_family,1,
+#                    default = 0)]
+# 
 set_2_ags = fread(paste0(outdir_dat, "/set_2_names.csv"))
 
-dt[gene_family %chin% set_2_ags$gene_family, 
+dt[gene_family %chin% set_2_ags$gene_family,
    set := 2]
 
 # Step 1 — Total
@@ -26,20 +28,24 @@ dt2 <- dt1[ag_type != "core"]
 n2 <- nrow(dt2)
 
 # Step 3 — Remove paralogs
-dt3 <- dt2[!grepl("_", gene_family)]
+dt3 <- dt2[average_dose <= 1]
 n3 <- nrow(dt3)
 
 # Step 4 — Remove singletons
 dt4 <- dt3[number_genomes != 1]
 n4 <- nrow(dt4)
 
-# Step 5 — Remove non syntenic
-dt5 <- dt4[acrs_msu!=1][acrs_jun!=1]
+# Step 5 — Remove piS outliers
+dt5 <- dt4[!gene_family %chin% piS_3IQR_outliers$gene_family]
 n5 <- nrow(dt5)
 
-# Step 7 — Remove genes with mutltiple parsimonious gains
-dt6 <- dt5[set==2]
+# Step 6 — Remove non syntenic
+dt6 <- dt5[acrs_msu!=1][acrs_jun!=1]
 n6 <- nrow(dt6)
+
+# Step 7 — Remove genes with mutltiple parsimonious gains
+dt7 <- dt6[set==2]
+n7 <- nrow(dt7)
 
 step_summary <- data.table(
   step = c(
@@ -47,11 +53,12 @@ step_summary <- data.table(
     "After removing core",
     "After removing paralogs",
     "After removing singletons",
+    "After removing piS outliers",
     "After removing non-syntenic",
     "After removing mutliple\n parsimonious gainst"
   ),
-  n_genes = c(n1, n1-n2, n2-n3, n3-n4, n4-n5, n5-n6),
-  cum_ag = c(NA, n2, n3, n4, n5,n6)
+  n_genes = c(n1, n1-n2, n2-n3, n3-n4, n4-n5, n5-n6, n6-n7),
+  cum_ag = c(NA, n2, n3, n4, n5,n6, n7)
 )
 
 step_summary

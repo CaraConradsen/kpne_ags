@@ -69,12 +69,14 @@ focal_genome_names = unique(pirate_anno$geno_id)
 pirate_lng <- fread("./input_data/PIRATE_260_hybrid_chr_out/PIRATE.gene_families.ordered.tsv",
                 select = c("gene_family", "consensus_gene_name",
                            "consensus_product", "number_genomes", 
+                           "threshold", "average_dose",
                            "cluster", "cluster_order", focal_genome_names))
 
 pirate_lng <- melt(pirate_lng, 
                    id.vars = c("gene_family", "number_genomes",
                                "consensus_gene_name",
                                "consensus_product",
+                               "threshold", "average_dose",
                                "cluster", "cluster_order"),
                    variable.name = "geno_id", 
                    value.name = "fus_locus_tag"
@@ -159,6 +161,17 @@ pirate_anno <- merge(pirate_anno, eggnog[,.(gene_family, egng_cog )],
                      all.x = TRUE, by = "gene_family")
 
 
+# Assign Core vs accessory ------------------------------------------------
+
+n_genomes = length(unique(pirate_anno[, geno_id]))
+
+
+pirate_anno[, ag_type := fcase(number_genomes < 0.99 * n_genomes & number_genomes >=  0.95 * n_genomes, "soft",
+                               number_genomes < 0.95 * n_genomes & number_genomes >=  0.15 * n_genomes, "shell",
+                               number_genomes < 0.15 * n_genomes, "cloud",
+                               default = "core")]
+
+
 # PART 2. Add in MGE information --------------------------------------------------
 
 # phastest
@@ -222,9 +235,6 @@ pirate_anno <- merge(pirate_anno,
                      gene_phage[!is.na(phg_state), .(locus_tag, phg_state, most_common_phage)],
                      all.x = TRUE, by = "locus_tag")
 
-# intermediate 
-# fwrite(pirate_anno, paste0(outdir_dat, "/pirate_anno.csv"))
-# pirate_anno <- fread(paste0(outdir_dat, "/pirate_anno.csv"))
 
 
 # Add integrons -----------------------------------------------------------
@@ -346,40 +356,16 @@ pirate_anno <- merge(pirate_anno,
                      gene_ice[!is.na(ice), .(locus_tag, ice)],
                      all.x = TRUE, by = "locus_tag")
 
-# merge with pan_anno
-
-fwrite(pirate_anno, paste0(outdir_dat, "/all_pirate_anno_cogs.csv"))
-# pirate_anno <- fread(paste0(outdir_dat, "/all_pirate_anno_cogs.csv"))
-
 
 # ISEScan  ----------------------------------------------------------------
 
 # TnCentral ---------------------------------------------------------------
 
 
+# get genome total length -------------------------------------------------
 
-# Pangenome for analysis --------------------------------------------------
-# need to account for fusion loci on different strands
-
-pan_anno <- unique(pirate_anno[,.(gene_family,geno_id,fus_locus_tag, 
-                                  number_genomes, consensus_product,
-                                  fstart, fend, fstrand, ST)])
-
-colnames(pan_anno)[6:8] <- c("start","end","strand")
-
-
-# Assign Core vs accessory ------------------------------------------------
-
-n_genomes = length(unique(pan_anno[, geno_id]))
-
-
-pan_anno[, ag_type := fcase(number_genomes < 0.99 * n_genomes & number_genomes >=  0.95 * n_genomes, "soft",
-                            number_genomes < 0.95 * n_genomes & number_genomes >=  0.15 * n_genomes, "shell",
-                            number_genomes < 0.15 * n_genomes, "cloud",
-                            default = "core")]
-# get total length
 fasta_dir <- list.files("./input_data/kpne_260_genohead_fasta/",
-                         recursive = TRUE, full.names = TRUE,
+                        recursive = TRUE, full.names = TRUE,
                         pattern = ".fasta")
 
 tot_length_dt <- foreach(i = fasta_dir,
@@ -390,8 +376,23 @@ tot_length_dt <- foreach(i = fasta_dir,
                          } 
 setDT(tot_length_dt)
 
-pan_anno <- merge(pan_anno, tot_length_dt,
+pirate_anno <- merge(pirate_anno, tot_length_dt,
                   all.x = TRUE, by =c("geno_id"))
+
+# intermediate 
+fwrite(pirate_anno, paste0(outdir_dat, "/all_pirate_anno_cogs.csv"))
+# pirate_anno <- fread(paste0(outdir_dat, "/all_pirate_anno_cogs.csv"))
+
+
+# Pangenome for analysis --------------------------------------------------
+# need to account for fusion loci on different strands
+
+pan_anno <- unique(pirate_anno[,.(gene_family,geno_id,ag_type, fus_locus_tag, 
+                                  number_genomes, consensus_product,
+                                  fstart, fend, fstrand, ST, tot_len)])
+
+colnames(pan_anno)[7:9] <- c("start","end","strand")
+
 
 fwrite(pan_anno, paste0(outdir_dat, "/pangenome_anno.csv"))
 
@@ -402,8 +403,7 @@ fwrite(pan_anno, paste0(outdir_dat, "/pangenome_anno.csv"))
 
 id_msu_ags <- unique(fread(paste0(outdir_dat, "/msu_regions_anchored.csv"),
                        select = c("fus_locus_tag","geno_id",
-                                  "ag_type", "anchor","msu",
-                                  "acrs_msu", "acrs_jun")))
+                                  "anchor","msu","acrs_msu", "acrs_jun")))
 
 pirate_anno <- merge(pirate_anno, id_msu_ags,
                      all.x = TRUE, by = c("fus_locus_tag","geno_id"))

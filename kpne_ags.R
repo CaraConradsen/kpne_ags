@@ -27,10 +27,10 @@ invisible(sapply(
 # this function attaches libraries, but also checks and installs missing packages
 packages <- c("ape","Biostrings","BSgenome", "doParallel","data.table", "castor", "MASS", "yyjsonr",
               "eulerr","foreach","GenomicRanges","gUtils","ggnewscale", "RCy3",
-              "msaR","shape", "ade4", "genoPlotR","MASS","phangorn","plotrix",
-              "ggiraph","htmlwidgets","igraph", "jsonlite","plyranges","pegas", "phyloseq", "VennDiagram", 
+              "msaR","shape", "ade4", "genoPlotR","MASS","phangorn","plotrix","VennDiagram",
+              "ggiraph","htmlwidgets","igraph", "jsonlite","plyranges","pegas", "phyloseq",
               "phytools","RColorBrewer","rtracklayer", "seqinr","stats","stringr", "vegan",
-              "vioplot", "homoplasyFinder")
+              "vioplot", "homoplasyFinder", "grid", "gridBase", "eulerr")
 
 # load in functions, uses BiocManager::install which handles both 
 # CRAN and Bioconductor packages
