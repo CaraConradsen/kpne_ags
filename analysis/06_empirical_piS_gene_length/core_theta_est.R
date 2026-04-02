@@ -129,7 +129,7 @@ system(cmd_polyfasta, wait = TRUE,
 
 # Step 3: read results
 polyfasta_results <- fread(paste0(outdir_dat, "/polyfasta_core_results.tsv"),
-                           select = c("file", "seg_sites_S"))
+                           select = c("file", "seg_sites_S", "pi_S", "sites_S"))
 
 
 # the file column will be the safe_name.fasta — recover gene family name
@@ -151,6 +151,12 @@ core_2Nu_dt <- foreach(i = list_unique_cores,
                          
                          S_syn <- polyfasta_results[gene_family == i, seg_sites_S]
                          hyperg_S_syn <- if (length(S_syn) == 0) NA else S_syn
+                         
+                         pi_S <- polyfasta_results[gene_family == i, pi_S]
+                         pi_S <- if (length(pi_S) == 0) NA else pi_S
+                         
+                         sites_S <- polyfasta_results[gene_family == i, sites_S]
+                         sites_S <- if (length(sites_S) == 0) NA else sites_S
                          
                          # Read the fixed FASTA, skip if missing
                          temp_string <- tryCatch(
@@ -184,7 +190,8 @@ core_2Nu_dt <- foreach(i = list_unique_cores,
                          
                          theta_w <- hyperg_S_syn / (L * a_n)
                          
-                         # calculate pi here
+                         # pis 
+                         pi_S_sub <- hyperg_S_syn * (pi_S * sites_S / S_syn) / m_target
                          
                          
                          #return value
@@ -193,11 +200,12 @@ core_2Nu_dt <- foreach(i = list_unique_cores,
                            m = width(temp_string)[1],
                            freq = n, 
                            S = S,
+                           pi_S = pi_S,
                            S_syn = S_syn,
                            hyperg_S_syn = hyperg_S_syn,
                            hyperg_m = L,
-                           theta_w = theta_w
-                           # pi = pi_value,
+                           theta_w = theta_w,
+                           hyperg_pi_syn = pi_S_sub
                          )
                          
                        }
@@ -240,7 +248,7 @@ png(paste0(outdir_fig,"/2Nmu_estimators.png"),
 
 # Plot comparison
 with(core_2Nu_dt,
-     plot(pi, theta_w,
+     plot(pi_S_sub, theta_w,
           pch = 16, col = rgb(0.1,0.2,0.4, alpha = 0.5),
           cex = 0.5, 
           xlab = "Nucleotide diversity (π)", 

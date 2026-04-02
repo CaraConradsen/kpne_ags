@@ -66,76 +66,7 @@ system(cmd_pangraph)
 
 end <- Sys.time()# End timer
 print(end - start) # Print runtime
-# 10 seqs Time difference of 0.58 mins
-# 25 seqs Time difference of 2.177748 mins
-# 93 seqs Time difference of 11.95702 mins
-# 115 seqs Time difference of 13.96003 mins
-# 214 seqs Time difference of 32.05445 mins
-# 260 seqs Time difference of 46.88418 mins
-
-# 2. ### Generate clonalframe for trees using pangraph and gubbins
-
-# get core
-pangraph_input = file.path(input_dir, "graph.json")
-set_ref_strain = "SPARK_1006_C1"
-core_output_file = file.path(input_dir, "core_genome_aln.fa")# output file dir
-
-# pangraph core command string 
-cmd_core <- sprintf(
-  "wsl %s export core-genome %s --guide-strain %s -o %s",
-  pangraph_path,
-  pangraph_input,
-  set_ref_strain,
-  core_output_file
-)
-
-# check command
-cat("Running command:\n", cmd_core, "\n\n")
-
-# run pangraph 
-system(cmd_core)
-
-
-# 3. ### get clean clonal frame with gubbins (in future maybe try STs?)
-
-conda_path = "/home/carac/anaconda3/bin/conda" # path to conda inside WSL
-conda_env = "gubbins_env" # conda environment name
-iterations = 20
-threads = 22 # number of threads
-tree_method = "fasttree" # tree builder to use
-# input alignment file (from pangraph output)
-input_alignment = "/mnt/c/Users/carac/Dropbox/Vos_Lab/kpne_ags/input_data/pangraph/core_genome_aln.fa"
-# output prefix 
-output_prefix = "/mnt/c/Users/carac/Dropbox/Vos_Lab/kpne_ags/input_data/pangraph/gub_graph"
-
-# build gubbins command string 
-cmd_gubbins <- sprintf(
-  "wsl %s run -n %s run_gubbins.py --iterations %d --threads %d -t %s --prefix %s %s",
-  conda_path,
-  conda_env,
-  iterations,
-  threads,
-  tree_method,
-  output_prefix,
-  input_alignment
-)
-
-# Print command for verification 
-cat("Running command:\n", cmd_gubbins, "\n\n")
-
-start <- Sys.time()# Start timer
-
-# run pangraph 
-system(cmd_gubbins)
-
-end <- Sys.time()# End timer
-print(end - start) # Print runtime
-# 10 seqs Time difference of 1.921924 mins
-# 25 seqs Time difference of 2.211768 mins
-# 93 seqs Time difference of 25.72868 mins
-# 115 seqs Time difference of 25.72868 mins
-# 214 seqs Time difference of 2.804536 hours
-# 260 seqs Time difference of 5.134598 hours
+# 260 seqs Time difference of 1.262778 hours
 
 # Import json -------------------------------------------------------------
 # # Read from a local file
@@ -391,10 +322,13 @@ sq_size <- 1       # both width and height = 1
 focal_geno = c("SPARK_1332_C1","SPARK_1006_C1",
                unordered_msu_genos, "SPARK_587_C1")
 
-png(filename = paste0(outdir_fig, "/msu_subset260_unordered_msu_labelled.png"),
+# png(filename = paste0(outdir_fig, "/msu_subset260_unordered_msu_labelled.png"),
+#     width = 9.69, height = 10.74, type = "cairo",
+#     units = "in",res = 300)
+
+png(filename = paste0(outdir_fig, "/msu_subset260_unordered_msu.png"),
     width = 9.69, height = 10.74, type = "cairo",
     units = "in",res = 300)
-
 
 # plot Core units + phylogenetic tree
 layout(matrix(c(1,2,3,4), nrow=2, byrow = TRUE), 
@@ -408,7 +342,7 @@ msu_plot_lengths[, labs:= paste0(msu_length, " bp")]
 
 setorderv(msu_plot_lengths,cols = "order")
 
-par(mar = c(4,6,0.2,1))
+par(mar = c(4,6,0.5,1))
 
 barp_y_lim = pretty(range(msu_plot_lengths$msu_length))[-7] 
 
@@ -416,7 +350,7 @@ with(msu_plot_lengths,
      barplot(msu_length, col = cols,
              border = "white", 
              space = 0, xaxs = "i",
-             yaxt="n",
+             yaxt="n", xpd = TRUE,
              ylab = "length (Kbp)"))
 with(msu_plot_lengths, 
      axis(side = 1, las = 2, 
@@ -490,10 +424,11 @@ for (i in sub_tree$tip.label) {
   t=t+1
 }
 
-axis(side = 3,  cex.axis = 0.5,
-     at = seq(0.5,(nblocks * sq_size)-0.5, 1),
-     labels = strsplit(gsub("MSU_","", most_common_ord_msu), ",")[[1]],
-     line = -2.2, tick = FALSE)
+## for msu labels
+# axis(side = 3,  cex.axis = 0.5,
+#      at = seq(0.5,(nblocks * sq_size)-0.5, 1),
+#      labels = strsplit(gsub("MSU_","", most_common_ord_msu), ",")[[1]],
+#      line = -2.2, tick = FALSE)
 
 
 dev.off()
