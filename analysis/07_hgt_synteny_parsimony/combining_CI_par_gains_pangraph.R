@@ -32,8 +32,8 @@ phylo_info = merge(phylo_info, syntenic_key,
 phylo_info[is.na(syn_jun), syn_jun := 2]
 
 # # Key
-# 0 = at_least_one_unknown
-# 1 = all_known (syntenic)
+# 0 = synteny_unknown
+# 1 = all_known & syntenic
 # 2 = non-syntenic
 
 # Remove paralogs ---------------------------------------------------------
@@ -52,11 +52,17 @@ piS_3IQR_outliers_ags <- fread(paste0(outdir_dat, "/piS_3IQR_outliers.csv"))
 phylo_info[, pis_out := fcase(gene_family %chin% piS_3IQR_outliers_ags$gene_family, 1,
                              default = 0)]
 
+
+# Apply parsimony rules ---------------------------------------------------
+
+phylo_info[, phy_par_keep := fcase(par_anc_state == 0 & par_gains == 1 , 1,
+                                  par_anc_state == 1 & par_gains == 0 , 1,
+                                  default = 0)]
+
+
 # Export info -------------------------------------------------------------
 
 fwrite(phylo_info, paste0(outdir_dat, "/phylo_info.csv"))
-
-
 
 
 
@@ -92,7 +98,7 @@ for (i in c(2,1,0)) {
     par(mar = c(0, 0,4,0))
   }
   
-  with(phylo_info[syn_jun==i],
+  with(phylo_info[pis_out!=1 & syn_jun==i],
        plot(number_genomes, consistencyindex,
             pch = 19,
             main = "",
@@ -110,7 +116,7 @@ for (i in c(2,1,0)) {
   
   axis(side = 3, at = 125, tick = FALSE,
        labels = bquote(
-         .(gene_set[as.character(i)])~" (" * italic(n) ~ "=" ~ .(nrow(phylo_info[syn_jun == i])) * ")"
+         .(gene_set[as.character(i)])~" (" * italic(n) ~ "=" ~ .(nrow(phylo_info[pis_out!=1 & syn_jun == i])) * ")"
        ))
   
 }
@@ -125,7 +131,7 @@ for (i in c(2,1,0)) {
     par(mar = c(4, 0,0,0))
   }
   
-  with(phylo_info[syn_jun==i],
+  with(phylo_info[pis_out!=1 & syn_jun==i],
        plot(number_genomes, par_gains,
             pch = 19, #bty = "L",
             cex = 0.5, yaxt ="n",

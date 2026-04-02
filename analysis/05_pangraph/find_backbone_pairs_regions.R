@@ -38,7 +38,7 @@ linearize_ori_intervals<- function(msu_dat, id = "node"){
         block_id, strand, 
         start, 
         end = tot_len, 
-        tot_len, ST 
+        tot_len, ST, count, n_strains 
       )],
       # Interval 2: 1 → region_end
       circular_msus[, .(
@@ -46,7 +46,7 @@ linearize_ori_intervals<- function(msu_dat, id = "node"){
         block_id, strand, 
         start = min_val, 
         end, 
-        tot_len, ST 
+        tot_len, ST, count, n_strains 
       )]
     ) 
     
@@ -156,6 +156,10 @@ anchor_msu_regions <- function(
     nomatch = 0L
   )
   
+  #  keep only columns that you need
+  cols_needed <- c("geno_id", "ST", "region_start", "region_end", "fus_locus_tag", "gene_family")
+  msu_region <- msu_region[, ..cols_needed]
+  
   msu_anchors <- foverlaps(
     x = anno,
     y = msu_x_core_nodes,
@@ -219,7 +223,7 @@ anchor_msu_regions <- function(
             }
           }
           
-          block
+          block[, .(fus_locus_tag)]
           
         } else {
           NULL
@@ -228,8 +232,7 @@ anchor_msu_regions <- function(
       by = geno_id
     ]
     
-    between_genes[, anchor := anchor_names]
-    between_genes[, .(fus_locus_tag, anchor)]
+    between_genes <- between_genes[, .(fus_locus_tag, anchor = anchor_names)]
   })
   
   
@@ -271,6 +274,7 @@ msu_regions_anchored <- foreach(msu = all_msu_nums,
                                 .combine = "rbind",
                                 .packages = "data.table") %dopar%{
                                  
+                                  cat(msu, "\n\n")
                                   # run anchor function
                                     anchor_msu_regions(
                                     msu_num        = msu,
@@ -323,3 +327,19 @@ msu_regions_anchored[gene_family %chin% across_junction_loci, acrs_jun := 1]
 # Output anchored genes ---------------------------------------------------
 
 fwrite(msu_regions_anchored, paste0(outdir_dat, "/msu_regions_anchored.csv"))
+
+
+
+# Check stuff -------------------------------------------------------------
+post_pi_fams <- fread(paste0(outdir_dat, "/post_pi_gene_families.csv"))
+
+rough_calculations <- unique(msu_regions_anchored[gene_family %chin% post_pi_fams$gene_family, 
+                                           .(gene_family, anchor)])
+
+anchored_ags <- unique(rough_calculations[anchor != "", gene_family])
+
+unanchored_ags <- unique(rough_calculations[!gene_family %chin% anchored_ags, gene_family])
+
+cat("total ", length(unique(rough_calculations$gene_family)))
+cat("anchored ", length(anchored_ags))
+cat("unanchored ", length(unanchored_ags))

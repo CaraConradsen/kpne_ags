@@ -33,21 +33,23 @@ min_gene_length = min(width(min_gene_length))
 
 pangraph_path = "/home/carac/anaconda3/bin/pangraph" # pangraph program dir 
 threads = 20 # Number of threads
-min_length = round(min_gene_length, digits = -1) # min block size in bp
+min_length = 500 #round(min_gene_length, digits = -1) # min block size set a 123 bp
 circular_flag = "--circular"   # or "" if not circular
 input_dir = "/mnt/c/Users/carac/Dropbox/Vos_Lab/kpne_ags/input_data/pangraph"# input folder dir
 output_file = file.path(input_dir, paste0("graph.json"))# output file dir
 kern_sens = "-k minimap2 -s 20"# alignment sensitivity
-beta_diversity = "-b 5"# energy cost for diversity alignment
+alpha_frag = "-a 500"# increase fragmentation penalty
+beta_diversity = "-b 10"# energy cost for diversity alignment
 
 # pangraph command string 
 cmd_pangraph <- sprintf(
-  "wsl %s build -j %d -l %d %s %s %s %s/*.fasta -o %s",
+  "wsl %s build -j %d -l %d %s %s %s %s %s/*.fasta -o %s",
   pangraph_path,
   threads,
   min_length,
   circular_flag,
   kern_sens,
+  alpha_frag,
   beta_diversity,
   input_dir,
   output_file

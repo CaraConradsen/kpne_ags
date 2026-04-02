@@ -49,8 +49,78 @@ collapse_alignment <- function(dna) {
   DNAString(paste0(merged, collapse = ""))
 }
 
+# set up directories
 
 gene_align_loc = "C:/Users/carac/Dropbox/Vos_Lab/kpne_ags/input_data/PIRATE_260_hybrid_chr_out/feature_sequences/"
+
+file_dir = "/mnt/c/Users/carac/Dropbox/Vos_Lab/kpne_ags/output/data"
+py_script = "/mnt/c/Users/carac/Dropbox/Vos_Lab/kpne_ags/analysis/python/PolyFastA.py"
+
+
+
+# Step 1: write all FASTAs first 
+fasta_dir <- paste0(outdir_dat, "/polyfasta_input/")
+dir.create(fasta_dir, showWarnings = FALSE)
+
+for (i in list_unique_ags) {
+  
+  temp_string <- tryCatch(
+    readDNAStringSet(paste0(gene_align_loc, i, ".nucleotide.fasta")),
+    error = function(e) NULL
+  )
+  if (is.null(temp_string)) next
+  
+  sampled_loci <- pangraph_anno[gene_family == i, locus_tag]
+  temp_string  <- temp_string[names(temp_string) %in% sampled_loci]
+  
+  if (length(gene_family_list[[i]]) >= 1) {
+    normies <- temp_string[!names(temp_string) %in% unlist(gene_family_list[[i]])]
+    collapsed_loc <- lapply(gene_family_list[[i]], function(fus_loc) {
+      collapse_alignment(temp_string[names(temp_string) %in% fus_loc])
+    })
+    collapsed_loc     <- DNAStringSet(unlist(collapsed_loc))
+    collapsed_loc_tag <- sapply(gene_family_list[[i]], `[`, 1)
+    collapsed_loc     <- DNAStringSet(setNames(collapsed_loc, collapsed_loc_tag))
+    temp_string       <- c(normies, DNAStringSet(collapsed_loc))
+  }
+  
+  if (length(temp_string) == 0) next
+  if (length(temp_string) %in% c(1, tot_pangenome_size)) next
+  
+  writeXStringSet(temp_string,
+                  paste0(fasta_dir, i, ".fasta"),
+                  format = "fasta")
+}
+
+# Step 2: single PolyFastA call on the whole directory
+fasta_dir_wsl <- gsub("C:", "/mnt/c", gsub("\\\\", "/", fasta_dir))
+result_wsl    <- gsub("C:", "/mnt/c", gsub("\\\\", "/", 
+                                           paste0(outdir_dat, "/polyfasta_results.tsv")))
+
+cmd_polyfasta <- paste(
+  "wsl",
+  "/home/carac/anaconda3/bin/python",
+  "/mnt/c/Users/carac/Dropbox/Vos_Lab/kpne_ags/analysis/python/PolyFastA.py",
+  "--dir", fasta_dir_wsl,
+  "--cds",
+  "--out", result_wsl
+)
+
+system(cmd_polyfasta, wait = TRUE, 
+       ignore.stdout = TRUE, 
+       ignore.stderr = TRUE)
+
+#Time difference of 51.88084 secs
+
+# Step 3: read results
+polyfasta_results <- fread(paste0(outdir_dat, "/polyfasta_results.tsv"),
+                           select = c("file", "seg_sites_S", "pi_S"))
+
+
+# the file column will be the safe_name.fasta — recover gene family name
+polyfasta_results[, gene_family := gsub("\\.fasta$", "", basename(file))]
+
+# Step 4: now do the rest of your loop without any system() calls
 
 # start timer
 start.time <- Sys.time()
@@ -59,50 +129,25 @@ start.time <- Sys.time()
 cl <- makeCluster(num_cores)
 registerDoParallel(cl)
 
-# Parallel foreach loop
+# foreach loop
 ag_age_S_dt <- foreach(i = list_unique_ags, 
                         .combine = rbind, 
-                        .packages = c("Biostrings","ape","pegas","data.table")) %dopar% {
+                        .packages = c("Biostrings","ape","pegas","data.table")) %do% {
                           
-                          # Read the FASTA, skip if missing
+                          S_syn <- polyfasta_results[gene_family == i, seg_sites_S]
+                          S_syn <- if (length(S_syn) == 0) NA else S_syn
+                          
+                          pi_S <- polyfasta_results[gene_family == i, pi_S]
+                          pi_S <- if (length(pi_S) == 0) NA else pi_S
+                          
+                          # Read the fixed FASTA, skip if missing
                           temp_string <- tryCatch(
-                            readDNAStringSet(paste0(gene_align_loc, i, ".nucleotide.fasta")),
+                            readDNAStringSet(paste0(fasta_dir, i, ".fasta")),
                             error = function(e) return(NULL)
                           )
                           
                           # skip if file is missing
                           if (is.null(temp_string)) return(NULL)
-                          
-                          #  Subset to loci present in pangraph annotation
-                          sampled_loci = pangraph_anno[gene_family == i, locus_tag]
-                          
-                          # Subset by sequence names
-                          temp_string <- temp_string[names(temp_string) %in% sampled_loci]
-                          
-                          # fix fission / fussion
-                          if(length(gene_family_list[[i]]) >= 1){
-                            normies <- temp_string[!names(temp_string) %in% unlist(gene_family_list[[i]])]
-                            
-                            collapsed_loc <- lapply(gene_family_list[[i]], function(fus_loc){
-                              collapse_alignment(temp_string[names(temp_string) %in% fus_loc])
-                            })
-                            
-                            
-                            collapsed_loc <- DNAStringSet(unlist(collapsed_loc))
-                            
-                            collapsed_loc_tag <- sapply(gene_family_list[[i]], `[`, 1)
-                            
-                            collapsed_loc <- DNAStringSet(setNames(collapsed_loc, collapsed_loc_tag))
-                            
-                            normies <- c(normies, DNAStringSet(collapsed_loc))
-                            
-                            temp_string <- copy(normies)
-                          }
-                          
-                          
-                          # Skip if no sequence, ORFan or core gene
-                          if (length(temp_string) == 0) return(NULL)
-                          if (length(temp_string) %in% c(1, tot_pangenome_size)) return(NULL)
                           
                           # save k strains
                           loc_freq = length(temp_string)
@@ -140,46 +185,65 @@ ag_age_S_dt <- foreach(i = list_unique_ags,
                             m = gene_len,
                             mean_ks = mean_ks,
                             freq = loc_freq,
-                            S = S
+                            S = S,
+                            S_syn = S_syn,
+                            pi_S = pi_S
                           )
 
                         }
 
-
-# get duration
-end.time <- Sys.time()
-end.time - start.time# Time difference of 24.2675 secs
-
 # Stop cluster when done
 stopCluster(cl)
 
-setDT(ag_age_S_dt)
+# get duration
+end.time <- Sys.time()
+end.time - start.time# Time difference of 2.108996 mins
 
-# Calculate segregating site per site
-# m is gene length, S is number of segregating sites
-ag_age_S_dt[, Sm := S / m]
+setDT(ag_age_S_dt)
 
 # # checks
 # ag_age_S_dt <- merge(ag_age_S_dt, unique(pangraph_anno[,.(gene_family, number_genomes)]), all.x = TRUE, by = "gene_family")
 # ag_age_S_dt[freq != number_genomes]# should be nothing
 
+# PolyFastA vs kaks piS
+with(ag_age_S_dt,
+     plot(mean_ks, pi_S,
+          pch = 16, col = rgb(0.1,0.1, 0.4, alpha = 0.5),
+          cex = 0.95, 
+          xlab = expression("kaks'"~pi[S]),
+          ylab = expression("PolyFastA's"~pi[S])))
+abline(a=0, b=1, lty=2, col="red")
 
 # Calcualte piS outliers --------------------------------------------------
 
-IQR_threshold = median(ag_age_S_dt$mean_ks) + (IQR(ag_age_S_dt$mean_ks) * 3)
+with(ag_age_S_dt,
+     hist(pi_S,
+          breaks = 200,
+          xlab = expression("PolyFastA's"~pi[S])))
+abline(v = median(ag_age_S_dt$pi_S), lty=2, col="red")
 
-ag_age_S_dt[, pi_out := fcase(mean_ks > IQR_threshold, 1,
+IQR_threshold = median(ag_age_S_dt$pi_S) + (IQR(ag_age_S_dt$pi_S) * 3)
+
+abline(v = IQR_threshold, lty=2, col="red")
+
+ag_age_S_dt[, pi_out := fcase(pi_S > IQR_threshold, 1,
                               default = 0)]
 
-fwrite(ag_age_S_dt[mean_ks > IQR_threshold, .(gene_family)],
+fwrite(ag_age_S_dt[pi_S > IQR_threshold, .(gene_family)],
        paste0(outdir_dat, "/piS_3IQR_outliers.csv"))
 
 
 
 # Downsample genes using a hypergeometric distribution ----------------------------------------
 
-# Define standardised target length (round up to 700)
-m_target <- median(ag_age_S_dt[pi_out==0]$m)+1
+# Examine the distribution first
+quantile(ag_age_S_dt[pi_out == 0, m], probs = c(0.1, 0.25, 0.5, 0.75, 0.9))
+# 10%    25%    50%    75%    90% 
+# 228.0  372.0  699.0 1125.0 1622.7 
+
+
+# Define standardised target length 
+m_target <- quantile(ag_age_S_dt[pi_out == 0, m], probs = c(0.25))
 
 
 # For genes LONGER than m_target, downsample segregating sites
@@ -187,8 +251,10 @@ m_target <- median(ag_age_S_dt[pi_out==0]$m)+1
 # of which S are segregating — i.e. sample from hypergeometric
 
 downsample_segsites <- function(S, m, m_target) {
-  if (m <= m_target) {
-    # Gene is at or below target length — no downsampling needed
+  if (m < m_target) {
+    # Gene is below target length — no downsampling needed
+    return(NA)
+  } else if (m == m_target){
     return(S)
   }
   # Draw one realisation from the hypergeometric
@@ -200,29 +266,25 @@ downsample_segsites <- function(S, m, m_target) {
 
 set.seed(42)
 
-ag_age_S_dt$S_std <- mapply(
+ag_age_S_dt$hyperg_S_syn <- mapply(
   downsample_segsites,
-  S       = ag_age_S_dt$S,
+  S       = ag_age_S_dt$S_syn,
   m       = ag_age_S_dt$m,
   m_target = m_target
 )
 
 # Standardised length column, all genes now treated as m_target long
-ag_age_S_dt$m_std <- ifelse(ag_age_S_dt$m >= m_target, 
+ag_age_S_dt$hyperg_m <- ifelse(ag_age_S_dt$m >= m_target, 
                             m_target, 
-                            ag_age_S_dt$m)
+                            NA)
 
-
-# Calculate segregating site per site using std measures
-# m is gene length, S is number of segregating sites
-ag_age_S_dt[, Sm_std := S_std / m_std]
 
 # Export observes seg sites, gene length and piS --------------------------
 
 fwrite(ag_age_S_dt, paste0(outdir_dat, "/ag_age_S_dt.csv"))
 # ag_age_S_dt <-fread(paste0(outdir_dat, "/ag_age_S_dt.csv"))
 
-
+unlink(fasta_dir, recursive = TRUE)
 
 
 # Examine gene length -----------------------------------------------------

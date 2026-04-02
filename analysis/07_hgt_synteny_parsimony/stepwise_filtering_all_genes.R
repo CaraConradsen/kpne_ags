@@ -8,16 +8,10 @@ dt <- copy(id_ags)
 # pi outliers
 piS_3IQR_outliers <- fread(paste0(outdir_dat, "/piS_3IQR_outliers.csv"))
 
-# # id set 2 outliers
-# set_1_ags = fread(paste0(outdir_dat, "/set_1_names.csv"))
-# 
-# dt[, set := fcase(gene_family %chin% set_1_ags$gene_family,1,
-#                    default = 0)]
-# 
-set_2_ags = fread(paste0(outdir_dat, "/set_2_names.csv"))
+# id set 2 outliers
+set_1_ags <- fread(paste0(outdir_dat, "/phylo_info.csv"))[syn_jun == 1, gene_family]
+set_2_ags <- fread(paste0(outdir_dat, "/phylo_info.csv"))[phy_par_keep == 1, gene_family]
 
-dt[gene_family %chin% set_2_ags$gene_family,
-   set := 2]
 
 # Step 1 — Total
 dt1 <- dt
@@ -40,12 +34,15 @@ dt5 <- dt4[!gene_family %chin% piS_3IQR_outliers$gene_family]
 n5 <- nrow(dt5)
 
 # Step 6 — Remove non syntenic
-dt6 <- dt5[acrs_msu!=1][acrs_jun!=1]
+dt6 <- dt5[gene_family %in% set_1_ags]
 n6 <- nrow(dt6)
+fwrite(dt6[,.(gene_family)], paste0(outdir_dat, "/set_1_names.csv"))
 
-# Step 7 — Remove genes with mutltiple parsimonious gains
-dt7 <- dt6[set==2]
+
+# Step 7 — Remove genes with multiple parsimonious gains
+dt7 <- dt6[gene_family %in% set_2_ags]
 n7 <- nrow(dt7)
+fwrite(dt7[,.(gene_family)], paste0(outdir_dat, "/set_2_names.csv"))
 
 step_summary <- data.table(
   step = c(
@@ -70,11 +67,16 @@ fwrite(step_summary, paste0(outdir_dat, "/step_summary.csv"))
 
 # Barplot to show before / after filtering --------------------------------
 
-ag_counts <- copy(dt2)
+ag_counts <- copy(dt4)
+
+ag_counts$set = "All"
+ag_counts[gene_family %chin% piS_3IQR_outliers$gene_family, set:= "pi_out"]
+ag_counts[set!= "pi_out" & gene_family %chin% set_1_ags, set:= "set_1"]
+ag_counts[gene_family %chin% dt7$gene_family, set:= "set_2"]
 
 ag_counts[, bin := cut(number_genomes,
-                breaks = seq(min(number_genomes), max(number_genomes) + 4, by = 4),
-                right = FALSE)]
+                       breaks = seq(min(number_genomes), max(number_genomes) + 4, by = 4),
+                       right = FALSE)]
 
 ag_counts <- ag_counts[,.(n = .N), by = c("set", "bin")]
 
@@ -99,9 +101,10 @@ par(mar=c(4,3,0.5,0.5))
 
 bp <- barplot(
   ag_counts_plot,
-  col = c(rgb(0.002,0.265,0.367),
-          rgb(0.514,0.592,0.663),
-          rgb(0.775,0.775,0.775)),
+  col = c(rgb(0.05, 0.05, 0.15),      # Very dark blue/navy (almost black)
+          rgb(0.05, 0.4, 0.6),      # Stronger cyan-blue
+          rgb(0.60, 0.70, 0.80),      # Lighter blue-gray
+          rgb(0.80, 0.80, 0.80)),      # Light gray
   xaxt ="n",
   yaxt ="n",
   border = "white",
@@ -114,21 +117,23 @@ bp <- barplot(
 axis(side = 1, at = seq(0, max(bp) + 0.5, length.out = 7),
        labels = round(seq(0,257, length.out = 7), digits = 0))
 
-axis(side = 2, at = seq(0,9, 1),
-     labels = seq(0,9, 1),las =1)
+axis(side = 2, at = seq(0,10, 1),
+     labels = seq(0,10, 1),las =1)
 
-axis(side = 2, at = 4.5,
+axis(side = 2, at = 5,
      tick = FALSE, line = 1,
      labels = expression("log"[10]~"Number of genes"))
 
 legend("topright",
-       legend = c("All", "Set 1","Set 2"),
-       border = c(rgb(0.775,0.775,0.775),
-                rgb(0.514,0.592,0.663),
-                rgb(0.002,0.265,0.367)),
-       fill = c(rgb(0.775,0.775,0.775),
-                rgb(0.514,0.592,0.663),
-                rgb(0.002,0.265,0.367)),
+       legend = c("All", expression(pi[S]~"outliers"), "Set 1","Set 2"),
+       border = c(rgb(0.80, 0.80, 0.80),
+                  rgb(0.60, 0.70, 0.80),
+                  rgb(0.05, 0.4, 0.6),
+                  rgb(0.05, 0.05, 0.15)),
+       fill = c(rgb(0.80, 0.80, 0.80),
+                rgb(0.60, 0.70, 0.80),
+                rgb(0.05, 0.4, 0.6),
+                rgb(0.05, 0.05, 0.15)),
        bty = "n")
 
 dev.off()
