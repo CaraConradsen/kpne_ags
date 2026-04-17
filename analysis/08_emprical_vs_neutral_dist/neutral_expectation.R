@@ -42,8 +42,8 @@ res_unique[, theta_exp_segsites := subtree_br_len * w_theta]
 
 # put on a scale of segregating sites per gene using median AG length, 700
 
-res_unique[, pi_exp_segsites := pi_exp_segsites * 700]
-res_unique[, theta_exp_segsites := theta_exp_segsites * 700]
+res_unique[, pi_exp_segsites := pi_exp_segsites * 372]
+res_unique[, theta_exp_segsites := theta_exp_segsites * 372]
 
 # Then using this expectation we generate the probability of actually 
 # observing 0, 1, 2….etc segregating sites using the Poisson distribution.
@@ -53,7 +53,7 @@ res_unique[, theta_exp_segsites := theta_exp_segsites * 700]
 # observations against this distribution.
 
 # Determine maximum number of segregating sites to consider
-max_seg_sites <- round(max(res_unique$pi_exp_segsites , res_unique$theta_exp_segsites) + 1) 
+max_seg_sites <- round(max(res_unique$pi_exp_segsites , res_unique$theta_exp_segsites) + 3) 
 
 site_rng <- 0:max_seg_sites
 
@@ -71,7 +71,7 @@ for (j in seq_along(site_rng)) {
 
 # get duration
 end.time <- Sys.time()
-end.time - start.time # Time difference of 8.102087 mins
+end.time - start.time # Time difference of 4.187734 mins
 
 colnames(prob_pi) = paste0("s_", site_rng)
 

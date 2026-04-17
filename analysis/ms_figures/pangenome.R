@@ -44,7 +44,7 @@ layout(mat, widths = c(1,0.75,0.75),
 
 # Add phylogenetic tree
 par(mar = c(2,1,3,1))
-tree <- read.tree("./input_data/bootstrapped_gubbins/tmp8yl_0c9w/RAxML_bestTree.core_genome_aln.iteration_20")
+tree <- read.tree("./input_data/bootstrapped_pirate_gubbins/boot_gub_pir_100.final_bootstrapped_tree.tre")
 ST_groups <- unique(pan_anno[,.(geno_id, ST)])
 
 # get colours
@@ -72,8 +72,11 @@ names(ST_seg) = tree$tip.label
 ST_cols = ST_groups$cols
 names(ST_cols) = tree$tip.label
 
+# add bootstrapped labels for <100
+tree$node.label <- gsub("100","", tree$node.label)
+
 # Plot circular tree
-lim <- c(-1.2, 1.2)
+lim <- c(-1.29, 1.29)
 plot(tree,
      edge.width = 0.8,
      type = "fan",
@@ -81,15 +84,21 @@ plot(tree,
      tip.color = "grey20",
      use.edge.length = FALSE,
      show.tip.label = TRUE,
+     label.offset = 0.02,        
      no.margin = TRUE, x.lim = lim, y.lim = lim)
 
+nodelabels(text = tree$node.label,
+           frame = "none",
+           cex = 0.45,
+           adj = c(1,1))     # <- move the label here
 
 lp <- get("last_plot.phylo", envir = .PlotPhyloEnv)
 ntips <- Ntip(tree)
 
 # coloured filled tip points
-points(lp$xx[1:ntips],
-       lp$yy[1:ntips],
+tip_scale <- 1.015   # <- tweak
+points(lp$xx[1:ntips] * tip_scale,
+       lp$yy[1:ntips] * tip_scale,
        pch = 16,
        cex = 0.75,
        col = ST_cols)
@@ -107,7 +116,7 @@ split_consecutive_angle <- function(indices, angle_order){
   split(indices[order(pos)], cumsum(breaks))
 }
 
-draw_clade_arc <- function(tip_indices, col="grey30", lwd=2, radius=1.17, label_radius=1.18,
+draw_clade_arc <- function(tip_indices, col="grey30", lwd=2, radius=1.2, label_radius=1.22,
                            label_text=NULL){
   
   if(length(tip_indices) == 0) return()  # skip empty
@@ -165,50 +174,42 @@ for(i in unique(ST_groups$ST)){
   blocks <- split_consecutive_angle(idx, order(tip_angles))
   
   for(block in blocks){
-    draw_clade_arc(block, col="grey30", lwd=2, 
-                   label_text=i)#ifelse(i!="ST512", i, ""))
+    draw_clade_arc(block, col="grey40", lwd= 1.75, 
+                   label_text= ifelse(i!="ST490", i, ""))
   }
   
-  # if(i=="ST512"){
-  #   split_idx <- idx[ceiling(length(idx)/2)]
-  #   xpos <- lp$xx[split_idx] * 1.18
-  #   ypos <- lp$yy[split_idx]
-  #   
-  #   label_angle <- atan2(ypos, xpos)
-  #   angle_deg <- label_angle * 180 / pi
-  #   
-  #   # Flip text if on left side
-  #   on_left <- xpos < 0
-  #   if(on_left){
-  #     angle_deg <- angle_deg + 180
-  #     adj_val <- c(1, 0.5)  # right-justified
-  #   } else {
-  #     adj_val <- c(0, 0.5)  # left-justified
-  #   }
-  #   
-  #   text(x = xpos, y = ypos,
-  #        labels = "ST512",
-  #        srt = angle_deg,
-  #        adj = adj_val,
-  #        cex = 0.5,
-  #        font = 2)
-  #   
-  #   segments(xpos+0.01,ypos-0.02,xpos+0.01,ypos+0.03,
-  #            col = "grey30",
-  #            lwd=2, lend=2)
-  #   
-  # }
+  if(i=="ST490"){
+    split_idx <- idx[ceiling(length(idx)/2)]
+    xpos <- lp$xx[split_idx] * 1.22
+    ypos <- lp$yy[split_idx]
+
+    label_angle <- atan2(ypos, xpos)
+    angle_deg <- label_angle * 180 / pi
+
+    # Flip text if on left side
+    on_left <- xpos < 0
+    if(on_left){
+      angle_deg <- angle_deg + 180
+      adj_val <- c(1, 0.5)  # right-justified
+    } else {
+      adj_val <- c(0, 0.5)  # left-justified
+    }
+
+    text(x = xpos, y = ypos - 0.01,
+         labels = "ST490",
+         srt = angle_deg,
+         adj = adj_val,
+         cex = 0.5,
+         font = 2)
+
+    segments(xpos + 0.025, ypos - 0.035,
+             xpos + 0.025, ypos + 0.01,
+             col = "grey30",
+             lwd=2, lend=2)
+
+  }
   
 }
-
-# ---- Scale bar (bottom-right) ----
-usr <- par("usr")
-
-add.scale.bar()
-
-text(x = usr[1]+0.2, y = usr[4]-0.3, labels = "a", 
-     xpd = TRUE, font = 2,cex = 1.5)
-
 
 # gene distribution
 par(mar = c(6,6,1,0.5))

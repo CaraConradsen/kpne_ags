@@ -6,7 +6,7 @@ if (file.exists(outdir_homoplasy)==FALSE){
   dir.create(outdir_homoplasy, recursive = TRUE)
 }
 
-core_tree <- read.tree("./input_data/bootstrapped_gubbins/tmp8yl_0c9w/RAxML_bestTree.core_genome_aln.iteration_20")
+core_tree <- read.tree("./input_data/bootstrapped_pirate_gubbins/boot_gub_pir_100.final_bootstrapped_tree.tre")
 
 core_tree_resolved <- multi2di(core_tree)
 

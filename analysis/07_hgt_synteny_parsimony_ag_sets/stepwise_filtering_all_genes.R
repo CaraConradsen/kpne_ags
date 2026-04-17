@@ -107,6 +107,7 @@ bp <- barplot(
           rgb(0.80, 0.80, 0.80)),      # Light gray
   xaxt ="n",
   yaxt ="n",
+  ylim = c(0,12),
   border = "white",
   space = 0.04,
   font.axis = 2,
@@ -117,10 +118,10 @@ bp <- barplot(
 axis(side = 1, at = seq(0, max(bp) + 0.5, length.out = 7),
        labels = round(seq(0,257, length.out = 7), digits = 0))
 
-axis(side = 2, at = seq(0,10, 1),
-     labels = seq(0,10, 1),las =1)
+axis(side = 2, at = seq(0,12, 2),
+     labels = seq(0,12, 2),las =1)
 
-axis(side = 2, at = 5,
+axis(side = 2, at = 6,
      tick = FALSE, line = 1,
      labels = expression("log"[10]~"Number of genes"))
 
