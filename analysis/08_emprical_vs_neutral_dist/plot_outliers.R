@@ -8,7 +8,12 @@ pangraph_anno <- fread(paste0(outdir_dat, "/all_pirate_anno_full.csv"),
 # rename eggnog_cog to COG_funct_cat
 setnames(pangraph_anno, old = "egng_cog", new = "COG_funct_cat")
 
-ag_age_S_dt <-fread(paste0(outdir_dat, "/ag_age_S_dt.csv"))[pi_out != 1]
+ag_age_S_dt <- fread(paste0(outdir_dat, "/ag_seg_sites_dt.csv"))
+
+colnames(ag_age_S_dt)[9] = "freq"
+
+ag_age_S_dt <- ag_age_S_dt[, .(seg_s_sites = mean(seg_s_sites),
+                               freq = mean(freq)), gene_family]
 
 # Examine outliers --------------------------------------------------------
 # get 95% quantiles for the neutral distribution from rcoal.R
@@ -30,31 +35,66 @@ dt_set2 <- ag_age_S_dt[gene_family %chin% set_2_ags$gene_family]
 # Join neutral quantiles and define outliers
 dt_set1[ci_summary[s_set=="pi"], on = "freq",
           pi_outlier := fifelse(
-            hyperg_S_syn  < lower_95 | hyperg_S_syn  > upper_95, 1L, 0L
+            seg_s_sites  < lower_95 | seg_s_sites  > upper_95, 1L, 0L
           )
+]
+
+dt_set1[ci_summary[s_set=="pi"], on = "freq",
+        pi_sel := fcase(
+          seg_s_sites  < lower_95, "directional", 
+          seg_s_sites  > upper_95, "balancing",
+          default = NA
+        )
 ]
 
 dt_set1[ci_summary[s_set=="w_theta"], on = "freq",
         theta_outlier := fifelse(
-          hyperg_S_syn  < lower_95 | hyperg_S_syn  > upper_95, 1L, 0L
+          seg_s_sites  < lower_95 | seg_s_sites  > upper_95, 1L, 0L
+        )
+]
+
+dt_set1[ci_summary[s_set=="w_theta"], on = "freq",
+        w_theta_sel := fcase(
+          seg_s_sites  < lower_95, "directional", 
+          seg_s_sites  > upper_95, "balancing",
+          default = NA
         )
 ]
 
 dt_set2[ci_summary[s_set=="pi"], on = "freq",
         pi_outlier := fifelse(
-          hyperg_S_syn  < lower_95 | hyperg_S_syn  > upper_95, 1L, 0L
+          seg_s_sites  < lower_95 | seg_s_sites  > upper_95, 1L, 0L
+        )
+]
+
+dt_set2[ci_summary[s_set=="pi"], on = "freq",
+        pi_sel := fcase(
+          seg_s_sites  < lower_95, "directional", 
+          seg_s_sites  > upper_95, "balancing",
+          default = NA
         )
 ]
 
 dt_set2[ci_summary[s_set=="w_theta"], on = "freq",
         theta_outlier := fifelse(
-          hyperg_S_syn  < lower_95 | hyperg_S_syn  > upper_95, 1L, 0L
+          seg_s_sites  < lower_95 | seg_s_sites  > upper_95, 1L, 0L
         )
 ]
 
-
+dt_set2[ci_summary[s_set=="w_theta"], on = "freq",
+        w_theta_sel := fcase(
+          seg_s_sites  < lower_95, "directional", 
+          seg_s_sites  > upper_95, "balancing",
+          default = NA
+        )
+]
 
 plot_dat_list <- list(dt_set1, dt_set2)
+
+fwrite(rbind(cbind(dt_set1, "set_1"),
+             cbind(dt_set2, "set_2")),
+       na = NA,
+       paste0(outdir_dat, "/set_outliers.csv"))
 
 # Plot graph --------------------------------------------------------------
 # nice light blue: 0.400, 0.714, 0.922
@@ -70,7 +110,7 @@ for (i in seq_along(plot_dat_list)) {
   #theta
   plot(NULL, pch = 16,
        xlim = c(0, 260),  
-       ylim = c(0, 70),
+       ylim = c(0, 25),
        cex = 0.45,
        yaxt = "n", bty="L",
        ylab = "",
@@ -86,7 +126,7 @@ for (i in seq_along(plot_dat_list)) {
   )
   
   with(plot_dat_list[[i]], 
-       points(freq, hyperg_S_syn, pch = 16,
+       points(freq, seg_s_sites, pch = 16,
               ylim = c(0, 1),
               cex = 0.45,
               yaxt = "n", bty="L",
@@ -98,14 +138,14 @@ for (i in seq_along(plot_dat_list)) {
   # axis(side = 2, at = seq(0,0.18, length.out = 7),
   #      labels = sprintf("%1.2f", seq(0,0.18, length.out = 7)), las = 2)
   
-  axis(side = 2, at = seq(0,70, length.out = 7),
-       labels = sprintf("%3.0f", seq(0,70, length.out = 7)), las = 2)
+  axis(side = 2, at = seq(0,25, length.out = 7),
+       labels = sprintf("%3.0f", seq(0,25, length.out = 7)), las = 2)
   
   perc_AGs_out = nrow(plot_dat_list[[i]][theta_outlier==1])/nrow(plot_dat_list[[i]])*100
   
   
   mtext(bquote(atop("Set "~.(i)~"Watterson's"~theta,
-                    .(sprintf("%2.2f",perc_AGs_out))*"% of AGs are outliers")), 
+                    .(nrow(plot_dat_list[[i]][theta_outlier==1]))*" ("*.(sprintf("%2.2f",perc_AGs_out))*"%) of AGs are outliers")), 
         side = 3, line = -0.25)
   
 }
@@ -114,7 +154,7 @@ for (i in seq_along(plot_dat_list)) {
   # nucleotide diversity
   plot(NULL, pch = 16,
        xlim = c(0, 260),  
-       ylim = c(0, 70),
+       ylim = c(0, 25),
        cex = 0.45,
        yaxt = "n", bty="L",
        ylab = "",
@@ -130,7 +170,7 @@ for (i in seq_along(plot_dat_list)) {
   )
   
   with(plot_dat_list[[i]], 
-       points(freq, hyperg_S_syn, pch = 16,
+       points(freq, seg_s_sites, pch = 16,
               ylim = c(0, 1),
               cex = 0.45,
               yaxt = "n", bty="L",
@@ -142,14 +182,14 @@ for (i in seq_along(plot_dat_list)) {
   # axis(side = 2, at = seq(0,0.18, length.out = 7),
   #      labels = sprintf("%1.2f", seq(0,0.18, length.out = 7)), las = 2)
   
-  axis(side = 2, at = seq(0,70, length.out = 7),
-       labels = sprintf("%3.0f", seq(0,70, length.out = 7)), las = 2)
+  axis(side = 2, at = seq(0,25, length.out = 7),
+       labels = sprintf("%3.0f", seq(0,25, length.out = 7)), las = 2)
   
   perc_AGs_out = nrow(plot_dat_list[[i]][pi_outlier==1])/nrow(plot_dat_list[[i]])*100
   
   
   mtext(bquote(atop("Set "~.(i)~"Nucleotide diversity",
-                    .(sprintf("%2.2f",perc_AGs_out))*"% of AGs are outliers")), 
+                    .(nrow(plot_dat_list[[i]][pi_outlier==1]))*" ("*.(sprintf("%2.2f",perc_AGs_out))*"%) of AGs are outliers")), 
         side = 3, line = -0.25)
   
 }
@@ -159,7 +199,7 @@ for (i in seq_along(plot_dat_list)) {
 mtext("Synonymous segregating sites", side = 2, outer = TRUE)
 mtext("Frequency in the pangenome", side = 1, outer = TRUE)
 
-legend("center", #horiz = TRUE,
+legend("topleft", #horiz = TRUE,
        legend = c("Outliers", "Non-outlier", "Neutral 95% CI"),
        col = c(rgb(0.2, 0.6, 1, alpha = 1), "black", "grey80"),
        pch = c(16, 16,15),
@@ -180,11 +220,11 @@ dev.off()
 ci_summary$iqr = ci_summary$iqr + 1E-6
 
 dt_set1[ci_summary[s_set=="w_theta"], on = "freq",
-          D := (hyperg_S_syn - median_S)/iqr
+          D := (seg_s_sites - median_S)/iqr
 ]
 
 dt_set2[ci_summary[s_set=="w_theta"], on = "freq",
-        D := (hyperg_S_syn - median_S)/iqr
+        D := (seg_s_sites - median_S)/iqr
 ]
 
 # add cogs

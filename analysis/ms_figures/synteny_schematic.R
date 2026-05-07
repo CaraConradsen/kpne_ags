@@ -140,17 +140,17 @@ outline_grey_blocks <- function(rows, positions, y_tops, row_h,
 
 # ── Panel 1: Accessory blocks ─────────────────────────────────────────────
 screen(2)               # first sub-screen (screens 1-4 already taken)
-par(mar = c(0.75, 2, 0.25, 2))
+par(mar = c(0.75, 1, 0.25, 2))
 plot.new()
 plot.window(xlim = c(0, 1), ylim = c(0, 1))
 draw_panel_rows(acc_rows)
-mtext("b", side = 3, adj= -0.1)
-mtext("remove accessory blocks (gray)", side = 1, line = -1, cex = 0.7, col = "grey40", font = 2)
+mtext("b", side = 3, font = 2, adj = -0.05)
+mtext("remove accessory blocks (grey)", side = 1, line = -1, cex = 0.7, col = "grey40", font = 2)
 close.screen(2)
 
 # ── Panel 2: Core blocks ──────────────────────────────────────────────────
 screen(3)
-par(mar = c(0.75, 2, 0.25, 2))
+par(mar = c(0.75, 1, 0.25, 2))
 plot.new()
 plot.window(xlim = c(0, 1), ylim = c(0, 1))
 draw_panel_rows(core_rows)
@@ -159,7 +159,7 @@ close.screen(3)
 
 # ── Panel 3: Rearrangements ───────────────────────────────────────────────
 screen(4)
-par(mar = c(1, 2, 0, 2))
+par(mar = c(1, 1, 0, 2))
 plot.new()
 plot.window(xlim = c(0, 1), ylim = c(0, 1))
 info <- draw_panel_rows(core_rows,
@@ -201,7 +201,7 @@ close.screen(4)
 
 # ── Panel 4: remap AGS ─────────────────────────────────────────────
 screen(5)
-par(mar = c(0.7, 2, 0.3, 2))
+par(mar = c(0.7, 1, 0.3, 2))
 plot.new()
 plot.window(xlim = c(0, 1), ylim = c(0, 1))
 info_last <- draw_panel_rows(acc_rows, sep_top = TRUE)
@@ -270,6 +270,43 @@ text(mean(info_last$positions[[4]][[9]]),
      info_last$y_tops[4] + 0.05,
      cex = 0.55,
      "different core block")
+
+# Add nested brackets
+x_positions <- c(1.08, 1.045, 1.01)  # adjust to taste
+
+# each bracket: vertical line + two horizontal ticks
+for (i in 1:3) {
+  x  <- x_positions[i]
+  y1 <- 0.875   # always bar 1
+  y2 <- c(0.125,0.375, 0.625)[i] # bar 2, 3, or 4
+  
+  
+  pBrackets::brackets(x, y1, x, y2,
+                      h = 0.025,
+                      ticks = NA, 
+                      xpd = TRUE,
+                      curvature = 0.05,
+                      col = "grey40",
+                      lwd = 1.75)
+  
+  # label at midpoint
+  label <- c("iii", "ii", "i")[i]
+  cx <- x + 0.025
+  cy <- (y1 + y2) / 2
+  
+  sw <- strwidth(label, cex = 0.8)
+  sh <- strheight(label, cex = 0.8)
+  pad <- sh * 0.15
+  
+  rect(cx - sw/2 - pad, cy - sh/2 - pad,
+       cx + sw/2 + pad, cy + sh/2 + pad,
+       col = "white", border = NA, xpd = TRUE)
+  text(cx, cy, label,
+       col = "grey20",
+       cex = 0.8, xpd = TRUE)
+
+}
+
 
 # # Redraw row 4 on top of ribbons
 # draw_blocks(rear_rows[[4]],

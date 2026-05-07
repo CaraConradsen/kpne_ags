@@ -217,8 +217,7 @@ per_ag <- sites_combined_dt[, {
 combined_pi_dt <- per_ag[, .(
   pi_s     = mean(pi_s),
   gene_length = mean(gene_length),
-  Ls_total = sum(Ls),
-  seg_total = sum(seg_s_sites)
+  seg_total = mean(seg_s_sites)
 ), by = gene_family]
 
 IQR_threshold = median(combined_pi_dt$pi_s) + 3*IQR(combined_pi_dt$pi_s)
@@ -242,8 +241,6 @@ with(combined_pi_dt,
           xlab = expression(pi[S]),
           col = "black", 
           main = "Dist. of pis"))
-
-
 
 segments(IQR_threshold,0,
          lwd = 1.1, lty = 3,
@@ -273,54 +270,6 @@ axis(side = 2, at = seq(0,200, 50),
 lapply(red_quantiles, function(x) {
   abline(v = x, col = "red", lty = 2)})
 
-text(red_quantiles[[2]], 150, "Q2: 375bp",
+text(red_quantiles[[2]], 150, paste0("Q2: ", ),
      col = "red", pos = 4)
 
-
-# Calculate AG segregating sites for target gene size ------------------------
-
-
-ag_genes_hypergeometric <- function(sites_dt, m_target = 375, min_sites = 2) {
-  
-  # drop genes shorter than m_target
-  sites_dt <- sites_dt[gene_length >= m_target]
-  
-  # per-gene processing 
-  sites_dt[, {
-    Ls <- .N
-    
-    Ls_keep <- rhyper(1, Ls, gene_length[1] - Ls, 375)
-    
-    if (Ls_keep < min_sites) {
-      # return an empty row; filtered out below
-      .(Ls = Ls, Ls_keep = Ls_keep, pi_s = NA_real_, 
-        n_median = NA_real_, seg_s_sites = NA_integer_)
-    } else {
-      idx      <- sample.int(Ls, size = Ls_keep)
-      n_j      <- n[idx]
-      counts   <- cbind(A[idx], C[idx], G[idx], T[idx])
-      
-      p_mat    <- counts / n_j
-      h        <- (n_j / (n_j - 1)) * (1 - rowSums(p_mat^2))
-      seg      <- rowSums(counts > 0) >= 2
-      
-      .(Ls        = as.integer(Ls),
-        Ls_keep   = as.integer(Ls_keep),
-        pi_s      = as.numeric(mean(h)),
-        n_median  = as.numeric(median(n_j)),
-        seg_s_sites = as.integer(sum(seg)))
-    }
-  }, by = .(gene_family, class, gene_length)]
-}
-
-
-ag_seg_sites_dt <- ag_genes_hypergeometric(sites_combined_dt)
-
-
-# add back frequency
-ag_seg_sites_dt <- merge(ag_seg_sites_dt,
-                         unique(pangraph_anno[, .(gene_family, number_genomes)]),
-                         all.x = TRUE, by = "gene_family")
-
-# Save output
-fwrite(ag_seg_sites_dt, paste0(outdir_dat, "/ag_seg_sites_dt.csv"))

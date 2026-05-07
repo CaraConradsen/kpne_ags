@@ -1,19 +1,16 @@
 # Import observed data ----------------------------------------------------
 
-# from get_ag_pis.R
-ag_age_S_dt <- fread(paste0(outdir_dat, "/ag_age_S_dt.csv"))
-
-# remove outliers
-ag_age_S_dt <- ag_age_S_dt[pi_out==0][, pi_out:=NULL]
-
-
 # estimates for set 1 and 2
 set_1_ags = fread(paste0(outdir_dat, "/set_1_names.csv"))
 set_2_ags = fread(paste0(outdir_dat, "/set_2_names.csv"))
 
 # Import core mutation rate -----------------------------------------------
 
-core_mut_rate <- fread(paste0(outdir_dat, "/core_mut_rate.csv"))
+core_mut_rate <- fread(paste0(outdir_dat, "/core_mut_rate.csv"))[3,]
+
+# import m target
+
+m_target <- as.numeric(readLines(paste0(outdir_dat, "/m_target.txt")))
 
 
 # Scale trees to gene length (m) ------------------------------------------
@@ -34,16 +31,16 @@ fwrite(res_unique, paste0(outdir_fig, "/res_unique.csv"))
 # we multiply the total branch length of each sub-tree 
 # that produces x descendants by half our estimate of 2Nu from the core genes. 
 
-pi_theta = (core_mut_rate$mean_pi)/2
-w_theta = (core_mut_rate$mean_theta_w)/2
+pi_theta = (core_mut_rate$mean_pi_s)/2
+w_theta = (core_mut_rate$mean_thetaW_s)/2
 
 res_unique[, pi_exp_segsites := subtree_br_len * pi_theta]
 res_unique[, theta_exp_segsites := subtree_br_len * w_theta]
 
 # put on a scale of segregating sites per gene using median AG length, 700
 
-res_unique[, pi_exp_segsites := pi_exp_segsites * 372]
-res_unique[, theta_exp_segsites := theta_exp_segsites * 372]
+res_unique[, pi_exp_segsites := pi_exp_segsites * m_target]
+res_unique[, theta_exp_segsites := theta_exp_segsites * m_target]
 
 # Then using this expectation we generate the probability of actually 
 # observing 0, 1, 2….etc segregating sites using the Poisson distribution.
@@ -71,7 +68,7 @@ for (j in seq_along(site_rng)) {
 
 # get duration
 end.time <- Sys.time()
-end.time - start.time # Time difference of 4.187734 mins
+end.time - start.time # Time difference of 10.86517 mins
 
 colnames(prob_pi) = paste0("s_", site_rng)
 
@@ -97,7 +94,7 @@ for (j in seq_along(site_rng)) {
 
 # get duration
 end.time <- Sys.time()
-end.time - start.time # Time difference of 8.102087 mins
+end.time - start.time # Time difference of 11.89873 mins
 
 colnames(prob_theta) = paste0("s_", site_rng)
 
@@ -127,6 +124,10 @@ prob_pi[, (s_cols) := lapply(.SD, function(x) x / row_total),
 
 prob_pi[, row_total:= NULL]
 
+# save normalised prod_pi
+fwrite(prob_pi, paste0(outdir_dat, "/prob_pi_norm.csv"))
+# prob_pi <- fread(paste0(outdir_dat, "/prob_pi_norm.csv"))
+
 pi_prod_lng <- melt(prob_pi,
                     id.vars = "freq",
                     variable.name = "seg_sites", 
@@ -148,6 +149,10 @@ prob_theta[, (s_cols) := lapply(.SD, function(x) x / row_total),
             .SDcols = s_cols]
 
 prob_theta[, row_total:= NULL]
+
+# save normalised prod_pi
+fwrite(prob_theta, paste0(outdir_dat, "/prob_theta_norm.csv"))
+# prob_theta <- fread(paste0(outdir_dat, "/prob_theta_norm.csv"))
 
 theta_prod_lng <- melt(prob_theta,
                     id.vars = "freq",

@@ -15,6 +15,10 @@ tot_pangenome_size = length(unique(core_anno$geno_id))
 list_unique_cores = unique(core_anno$gene_family)
 
 
+# import m target
+
+m_target <- as.numeric(readLines(paste0(outdir_dat, "/m_target.txt")))
+
 # fission/fusion list -----------------------------------------------------
 
 core_anno[, n:=.N, by = c("gene_family", "geno_id")]
@@ -182,14 +186,37 @@ end.time <- Sys.time()
 end.time - start.time # Time difference of 4.122814 mins
 
 fwrite(sites_combined_dt, paste0(outdir_dat, "/core_aln_sites.csv"))
+# sites_combined_dt <- fread(paste0(outdir_dat, "/core_aln_sites.csv"))
 
+# How target size affects core genes --------------------------------------
+
+png(filename = paste0(outdir_fig, "/core_gene_len_dist.png"),
+    width = 8.5,height = 9,
+    units = "cm",res = 300)
+
+par(mar = c(4.5,4,0.5,0.5))
+with(unique(sites_combined_dt[, .(gene_length, gene_family)]),
+     hist(gene_length,
+          yaxt = "n",
+          ylim =c(0, 200),
+          main = "",
+          xlab = "Core gene length (bp)",
+          border = "grey30",
+          col = "grey30", breaks = 100))
+axis(side = 2, at = seq(0,200, 50),
+     labels = seq(0,200, 50), las = 2)
+abline(v = 435, lty = 2, col = "red")
+text(435, 200, "downsample target", 
+     pos = 4)
+
+dev.off()
 
 # per-gene binomial thinning + pi / thetaW summary -----------------------
 # sites_dt: must contain columns n, A, C, G, T, gene_length, gene_family, class
 # m_target: target gene length in bp (e.g. 375)
 # min_sites: minimum retained sites for a gene to be kept (default 2)
 
-summarise_genes_hypergeometric <- function(sites_dt, m_target = 375, min_sites = 2) {
+summarise_genes_hypergeometric <- function(sites_dt, m_target, min_sites = 2) {
   
   # drop genes shorter than m_target
   sites_dt <- sites_dt[gene_length >= m_target]
@@ -198,7 +225,7 @@ summarise_genes_hypergeometric <- function(sites_dt, m_target = 375, min_sites =
   sites_dt[, {
     Ls <- .N
     
-    Ls_keep <- rhyper(1, Ls, gene_length[1] - Ls, 375)
+    Ls_keep <- rhyper(1, Ls, gene_length[1] - Ls, m_target)
 
     if (Ls_keep < min_sites) {
       # return an empty row; filtered out below
@@ -228,7 +255,7 @@ summarise_genes_hypergeometric <- function(sites_dt, m_target = 375, min_sites =
 }
 
 
-core_theta_dt <- summarise_genes_hypergeometric(sites_combined_dt)
+core_theta_dt <- summarise_genes_hypergeometric(sites_combined_dt, m_target)
 
 
 # Save output
@@ -263,9 +290,12 @@ with(core_theta_dt,
           main = "Comparison of 2Nμ estimates")
 )
 abline(0, 1, col = "black", lty = 2)
+text(0.12,0.12, "1:1 line", pos = 4)
 abline(with(core_theta_dt,
             lm(thetaW_s~pi_s)),
        col = "red", lty = 2)
+text(0.12,0.09, "Watterson's θS ~ πS",
+     col = "red", pos = 4)
 dev.off()
 
 

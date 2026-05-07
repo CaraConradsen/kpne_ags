@@ -68,6 +68,28 @@ end <- Sys.time()# End timer
 print(end - start) # Print runtime
 # 260 seqs Time difference of 1.262778 hours
 
+# 2. ### Generate clonalframe for trees using pangraph and gubbins
+
+# get core
+pangraph_input = file.path(input_dir, "graph.json")
+set_ref_strain = "SPARK_1006_C1"
+core_output_file = file.path(input_dir, "core_genome_aln.fa")# output file dir
+
+# pangraph core command string 
+cmd_core <- sprintf(
+  "wsl %s export core-genome %s --guide-strain %s -o %s",
+  pangraph_path,
+  pangraph_input,
+  set_ref_strain,
+  core_output_file
+)
+
+# check command
+cat("Running command:\n", cmd_core, "\n\n")
+
+# run pangraph 
+system(cmd_core)
+
 # Import json -------------------------------------------------------------
 # # Read from a local file
 
@@ -127,7 +149,7 @@ core_dt <- nodes_dt[count == n_strains & n_strains == max_genomes,]
 # Plot Core MSU order ---------------------------------------------------------------
 
 # Left panel: Phylogenetic tree 
-core_gub_tree_geno <- read.tree("./input_data/bootstrapped_gubbins/tmp8yl_0c9w/RAxML_bestTree.core_genome_aln.iteration_20")
+core_gub_tree_geno <- read.tree("./input_data/bootstrapped_pirate_gubbins/boot_gub_pir_100.final_bootstrapped_tree.tre")
 
 core_gub_tree <- core_gub_tree_geno
 
@@ -319,7 +341,7 @@ nblocks <- nrow(msu_cols)       # 5 squares per row
 sq_size <- 1       # both width and height = 1
 
 # consensus "SPARK_1006_C1"
-focal_geno = c("SPARK_1332_C1","SPARK_1006_C1",
+focal_geno = c("SPARK_1294_C1","SPARK_1006_C1",
                unordered_msu_genos, "SPARK_587_C1")
 
 # png(filename = paste0(outdir_fig, "/msu_subset260_unordered_msu_labelled.png"),
@@ -415,7 +437,7 @@ for (i in sub_tree$tip.label) {
              length = 0.05, col = "white")
     }
   }
-  label_txt <- if (!i %in% c("SPARK_1006_C1","SPARK_587_C1","SPARK_1332_C1")) unique(dat$geno_id) else paste0(unique(dat$geno_id), "\n(consensus)")
+  label_txt <- if (!i %in% c("SPARK_1006_C1","SPARK_587_C1","SPARK_1294_C1")) unique(dat$geno_id) else paste0(unique(dat$geno_id), "\n(consensus)")
   
   axis(side = 2, tick = FALSE, las = 2,
        cex.axis = 0.75,
