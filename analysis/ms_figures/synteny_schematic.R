@@ -206,26 +206,27 @@ plot.new()
 plot.window(xlim = c(0, 1), ylim = c(0, 1))
 info_last <- draw_panel_rows(acc_rows, sep_top = TRUE)
 
-merge_blocks(acc_rows,info_last,grad_num = 100,
-             block_grps = list(list(c(2,3,5), 8:9),
-                               list(c(1,3,5), 9:10),
-                               list(c(1,4,5), c(8,10)),
-                               list(c(3,4,6), c(8,10))))
+# code to merge blocks (not using)
+# merge_blocks(acc_rows,info_last,grad_num = 100,
+#              block_grps = list(list(c(2,3,5), 8:9),
+#                                list(c(1,3,5), 9:10),
+#                                list(c(1,4,5), c(8,10)),
+#                                list(c(3,4,6), c(8,10))))
 
 mtext("re-map accessory genes", side = 1, line = -0.5, cex = 0.7, col = "grey40", font = 2)
 
-acc_blocks <- lapply(acc_rows, function(row) {
-  which(sapply(row, function(x) x[[2]] == col_grey | x[[2]] == col_dgrey))
-})
-
-acc_rows_grey <- lapply(acc_rows, function(row) {
-  lapply(row, function(b) {
-    if (b[[2]] == col_grey | b[[2]] == col_dgrey) b else list(b[[1]], NA)
-  })
-})
-
-# add back AGS
-draw_panel_rows(acc_rows_grey, sep_top = TRUE)
+# acc_blocks <- lapply(acc_rows, function(row) {
+#   which(sapply(row, function(x) x[[2]] == col_grey | x[[2]] == col_dgrey))
+# })
+# 
+# acc_rows_grey <- lapply(acc_rows, function(row) {
+#   lapply(row, function(b) {
+#     if (b[[2]] == col_grey | b[[2]] == col_dgrey) b else list(b[[1]], NA)
+#   })
+# })
+# 
+# # add back AGS
+# draw_panel_rows(acc_rows_grey, sep_top = TRUE)
 
 # attach syntenic loci
 

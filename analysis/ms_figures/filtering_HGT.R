@@ -269,7 +269,7 @@ venn <- plot(fit,
        labels = c(
          "non-syntenic",
          "\u03C0s outliers",
-         "multiple gains"
+         "parsimonious gains >1"
        ),
        fontfamily = "sans",
        cex        = 0.6
