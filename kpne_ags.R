@@ -26,11 +26,12 @@ invisible(sapply(
 # Package dependencies
 # this function attaches libraries, but also checks and installs missing packages
 packages <- c("ape","Biostrings","BSgenome", "doParallel","data.table", "castor", "MASS", "yyjsonr",
-              "eulerr","foreach","GenomicRanges","gUtils","ggnewscale", "RCy3", "pBrackets",
+              "eulerr","foreach","GenomicRanges","gUtils","ggnewscale", "RCy3", "pBrackets","png",
               "msaR","shape", "ade4", "genoPlotR","MASS","phangorn","plotrix","VennDiagram",
               "ggiraph","htmlwidgets","igraph", "jsonlite","plyranges","pegas", "phyloseq",
               "phytools","RColorBrewer","rtracklayer", "seqinr","stats","stringr", "vegan",
-              "vioplot", "homoplasyFinder", "grid", "gridBase", "eulerr")
+              "vioplot", "homoplasyFinder", "grid", "gridBase", "eulerr", "xlsx","caper",
+              "openxlsx", "beeswarm", "dendextend", "treeWAS", "parallel")
 
 # load in functions, uses BiocManager::install which handles both 
 # CRAN and Bioconductor packages
@@ -44,17 +45,17 @@ setDTthreads(threads = detectCores()-2)
 num_cores <- detectCores()-2
 
 # create output directories
-outdir_tab <- "./output/tables"
 outdir_fig <- "./output/figures"
 outdir_dat <- "./output/data"
+outdir_xlsx <- "./output/results_xlsx"
 
-if (file.exists(outdir_tab)==FALSE){
-  dir.create(outdir_tab, recursive = TRUE)
-}
 if (file.exists(outdir_fig)==FALSE){
   dir.create(outdir_fig, recursive = TRUE)
 }
 if (file.exists(outdir_dat)==FALSE){
   dir.create(outdir_dat, recursive = TRUE)
+}
+if (file.exists(outdir_xlsx)==FALSE){
+  dir.create(outdir_xlsx, recursive = TRUE)
 }
 

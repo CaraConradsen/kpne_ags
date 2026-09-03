@@ -1,0 +1,318 @@
+gene_family,freq,freq_bin,consensus_gene_name,consensus_product,predicted_mode
+g000150_4,10,10-12,,hypothetical protein,indeterminate
+g000516_3,29,23-31,yfmG,Serine/threonine kinase,indeterminate
+g000849_2,7,7,baeS,histidine kinase,indeterminate
+g001882,30,23-31,,Phage late control D family protein,presence/absence
+g002190,36,32-49,unitary,Chromate transporter,indeterminate
+g002399_1,13,13,,glycoside hydrolase family 108 protein,indeterminate
+g002399_2,7,7,,glycoside hydrolase family protein,indeterminate
+g002399_3,2,2,,Phage-related lysozyme (Muraminidase),presence/absence
+g002405,31,23-31,glgP,Alpha-1%2C4 glucan phosphorylase,indeterminate
+g002445,37,32-49,intE,Site-specific recombinase%2C phage integrase family,presence/absence
+g002467,30,23-31,,Integrase,presence/absence
+g002760,37,32-49,,Prophage tail length tape measure,presence/absence
+g002787,31,23-31,fbpB,Iron ABC transporter permease,indeterminate
+g002799,41,32-49,,Integrase,presence/absence
+g002959,33,32-49,ptsH,phosphoenolpyruvate--protein phosphotransferase,indeterminate
+g003017,49,32-49,xerD,Integrase,presence/absence
+g003077,42,32-49,,Putative glycoside hydrolase,indeterminate
+g003224,19,18-22,,Phage integrase family site-specific recombinase,presence/absence
+g003286,22,18-22,,phosphatase PAP2 family protein,indeterminate
+g003391_1,13,13,vgrG,Type VI secretion system tip protein VgrG,presence/absence
+g003436,17,14-17,ubiD,3-polyprenyl-4-hydroxybenzoate carboxy-lyase,indeterminate
+g003641,35,32-49,,Ubiquitin-activating enzyme E1 FCCH domain-containing protein,indeterminate
+g003642_2,13,13,vgrG,Type VI secretion system tip protein VgrG,presence/absence
+g003699,26,23-31,gGDEF,diguanylate cyclase,indeterminate
+g003726,22,18-22,,Exodeoxyribonuclease 8,indeterminate
+g003895,12,10-12,wbdA,polymannosyl GlcNAc-diphospho-ditrans%2Coctacis-undecaprenol 2%2C3-alpha-mannosylpolymerase WbdA,indeterminate
+g003903,12,10-12,wbdD,O-antigen chain terminator bifunctional methyltransferase/kinase WbdD,sequence-turnover
+g003940,8,8,,site-specific integrase,presence/absence
+g003945,24,23-31,,Phage integrase,presence/absence
+g003949,16,14-17,,DUF6883 domain-containing protein,indeterminate
+g003980,22,18-22,,Integrase,presence/absence
+g004017,18,18-22,recT,RecT family recombinase,presence/absence
+g004079,13,13,,Acid-resistance membrane protein,indeterminate
+g004165,33,32-49,,N-acetyltransferase,indeterminate
+g004191,8,8,,Internal virion protein,indeterminate
+g004197,8,8,unitary,replication endonuclease,indeterminate
+g004215,8,8,,PLD phosphodiesterase domain-containing protein,indeterminate
+g004217,8,8,,PLD phosphodiesterase domain-containing protein,indeterminate
+g004220,9,9,,Portal protein,presence/absence
+g004226,8,8,,hypothetical protein,indeterminate
+g004246,13,13,,Multidrug resistance protein B,presence/absence
+g004258,7,7,matC,Dicarboxylate carrier MatC N-terminal domain-containing protein,presence/absence
+g004276,13,13,,EmrA/EmrK family multidrug efflux transporter periplasmic adaptor subunit,presence/absence
+g004280,32,32-49,,Site-specific integrase,presence/absence
+g004304,22,18-22,purR,Transcriptional regulator,indeterminate
+g004368,13,13,eAL,EAL domain-containing protein,indeterminate
+g004450,9,9,,Rz-like spanin,indeterminate
+g004580,6,6,,Tyrosine autokinase,indeterminate
+g004581,8,8,,hypothetical protein,indeterminate
+g004584,9,9,,Phage protein,presence/absence
+g004585,6,6,bDS1,Metallo-beta-lactamase domain-containing protein,presence/absence
+g004605,7,7,,Phage tail protein,presence/absence
+g004608,9,9,,Terminase,presence/absence
+g004623,22,18-22,uhpC,Major facilitator superfamily (MFS) profile domain-containing protein,indeterminate
+g004641,16,14-17,,Tail fiber domain-containing protein,presence/absence
+g004672,8,8,,Methyltransferase,indeterminate
+g004684,18,18-22,wcaG,NAD-dependent epimerase,indeterminate
+g004689,9,9,,Sel1 repeat family protein,indeterminate
+g004690,7,7,,Helix-turn-helix domain-containing protein,indeterminate
+g004692,21,18-22,,Chromate resistance protein,presence/absence
+g004721,37,32-49,wzm,O9 family O-antigen export ABC transporter permease subunit,sequence-turnover
+g004742_2,7,7,,Concanavalin A-like lectin/glucanase superfamily protein,indeterminate
+g004760,6,6,iprA,IprA winged helix-turn-helix domain-containing protein,indeterminate
+g004761,13,13,evgA,acid-sensing system DNA-binding response regulator EvgA,indeterminate
+g004815,35,32-49,,Tail tubular protein A,indeterminate
+g004819_2,3,3,hipB,Cupin,indeterminate
+g004823,35,32-49,,Phage Terminase Small Subunit,presence/absence
+g004848,35,32-49,,Phage protein,presence/absence
+g004938,9,9,,DNA-packaging protein,indeterminate
+g004963,24,23-31,,Phage tail tape measure protein,presence/absence
+g004969,6,6,,Fimbrial assembly protein,sequence-turnover
+g004980,5,5,,replication endonuclease,indeterminate
+g004983,24,23-31,,Phage protein,presence/absence
+g005007,13,13,,ATP-binding cassette subfamily C exporter for protease/lipase,presence/absence
+g005012,5,5,xerD,Phage integrase family site-specific recombinase,presence/absence
+g005026,10,10-12,,Integrase,presence/absence
+g005034,8,8,spoIVCA,Site-specific recombinase%2C resolvase family,presence/absence
+g005036,9,9,uhpC,Major facilitator superfamily (MFS) profile domain-containing protein,indeterminate
+g005081,5,5,nolL,Acyltransferase family protein,indeterminate
+g005089,6,6,dnaT,DnaT DNA-binding domain-containing protein,indeterminate
+g005095,35,32-49,,major capsid protein,presence/absence
+g005099,19,18-22,,Integrase,presence/absence
+g005105_2,3,3,,Bacteriophage T7 Gp4 DNA primase/helicase N-terminal domain-containing protein,presence/absence
+g005122,8,8,yjeJ,YjeJ-like,indeterminate
+g005185,9,9,,Replication protein,indeterminate
+g005267,9,9,,DUF1367 domain-containing protein,indeterminate
+g005272,40,32-49,,Helix-turn-helix,indeterminate
+g005295,9,9,,Lysozyme,indeterminate
+g005479,6,6,,Transglycosylase,indeterminate
+g005486,7,7,,Phage protein,presence/absence
+g005487,11,10-12,,Phage protein,presence/absence
+g005492,17,14-17,ygjK,alpha-glucosidase,indeterminate
+g005504,6,6,,Succinate dehydrogenase flavoprotein subunit,indeterminate
+g005525,35,32-49,,Tail protein,presence/absence
+g005533,11,10-12,,Phage protein,presence/absence
+g005540,17,14-17,potE,Amino acid permease,indeterminate
+g005546,8,8,,Peptidase S74 domain-containing protein,indeterminate
+g005615,4,4,fimB,Prophage integrase IntR,presence/absence
+g005617,5,5,,Integrase,presence/absence
+g005619,7,7,unitary,Tyr recombinase domain-containing protein,presence/absence
+g005633,4,4,,Lambda integrase,presence/absence
+g005671,5,5,,Site-specific DNA-methyltransferase (adenine-specific),indeterminate
+g005693,9,9,,Integrase,presence/absence
+g005727,4,4,repA,Replication protein RepA,indeterminate
+g005728,16,14-17,,Type VI secretion-associated protein%2C VC_A0118 family,presence/absence
+g005769,5,5,,phosphatase PAP2 family protein,indeterminate
+g005811,14,14-17,cas5e,type I-E CRISPR-associated protein Cas5/CasD,presence/absence
+g005842,10,10-12,,Bacteriophage lambda tail assembly I,presence/absence
+g005848,17,14-17,ubiX,Flavin prenyltransferase UbiX,indeterminate
+g005883,11,10-12,,PD(D/E)XK endonuclease domain-containing protein,indeterminate
+g006051,8,8,,Phage protein,presence/absence
+g006123,11,10-12,,Beta-N-acetylglucosaminidase,indeterminate
+g006130,3,3,traC,DNA primase TraC,presence/absence
+g006144,6,6,vgrG,Type VI secretion system tip protein VgrG,presence/absence
+g006147,4,4,nifJ,pyruvate:ferredoxin (flavodoxin) oxidoreductase,indeterminate
+g006151,17,14-17,ebgA,beta-galactosidase subunit alpha,indeterminate
+g006163,3,3,drt3b,antiviral reverse transcriptase Drt3b,indeterminate
+g006176,6,6,bDS1,Alkyl/aryl-sulfatase BDS1,indeterminate
+g006189,10,10-12,,DUF4041 domain-containing protein,indeterminate
+g006225,3,3,,Phage integrase,presence/absence
+g006228,4,4,nifB,nitrogenase cofactor biosynthesis protein NifB,indeterminate
+g006232,5,5,wcaJ,undecaprenyl-phosphate glucose phosphotransferase,indeterminate
+g006233,6,6,wcaJ,undecaprenyl-phosphate glucose phosphotransferase,indeterminate
+g006244,4,4,nifN,nitrogenase iron-molybdenum cofactor biosynthesis protein NifN,indeterminate
+g006247,13,13,,Protease secretion system outer membrane protein,sequence-turnover
+g006250,4,4,nifE,nitrogenase iron-molybdenum cofactor biosynthesis protein NifE,indeterminate
+g006253,4,4,,Integrase,presence/absence
+g006261,13,13,,Membrane fusion protein (MFP) family protein,indeterminate
+g006266,4,4,nifK,nitrogenase molybdenum-iron protein subunit beta,indeterminate
+g006268,6,6,ydiF,Acetate CoA-transferase YdiF,indeterminate
+g006280,7,7,,phage major capsid protein,presence/absence
+g006283,6,6,,Hexuronate transporter,indeterminate
+g006286,3,3,,Sel1 repeat,indeterminate
+g006288,5,5,,DUF6396 domain-containing protein,indeterminate
+g006291,5,5,,Site-specific integrase,presence/absence
+g006294,3,3,,phosphoglycolate phosphatase,indeterminate
+g006295,32,32-49,traG,TraG N-terminal Proteobacteria domain-containing protein,presence/absence
+g006302,4,4,nifL,nitrogen fixation negative regulator NifL,indeterminate
+g006312,4,4,gpD,Phage late control D family protein,presence/absence
+g006313,6,6,,Tle cognate immunity protein 4 C-terminal domain-containing protein,presence/absence
+g006317,3,3,,hypothetical protein,indeterminate
+g006319,3,3,,Right-handed parallel beta-helix repeat-containing protein,indeterminate
+g006323,7,7,fimB,Tyr recombinase domain-containing protein,presence/absence
+g006335,5,5,rfaB,Glycosyl transferase family protein,indeterminate
+g006350,4,4,xerD,Site-specific recombinase XerD,presence/absence
+g006358,4,4,,Tyr recombinase domain-containing protein,presence/absence
+g006375,4,4,,Integrase,presence/absence
+g006390,23,23-31,,Uridine diphosphate galacturonate 4-epimerase,indeterminate
+g006401,6,6,,Terminase small subunit,presence/absence
+g006406,6,6,,major capsid protein,presence/absence
+g006415,7,7,,GDP-L-fucose synthase,indeterminate
+g006466,9,9,yiaJ,IclR family transcriptional regulator YiaJ,indeterminate
+g006467,4,4,lexA,SOS-response repressor and protease,indeterminate
+g006482,3,3,trbJ,P-type conjugative transfer protein TrbJ,presence/absence
+g006484,3,3,trbJ,P-type conjugative transfer protein TrbJ,presence/absence
+g006501,3,3,,Putative PhoPQ-activated integral membrane protein,indeterminate
+g006627,6,6,,hypothetical protein,indeterminate
+g006636,3,3,,Molecular chaperone,indeterminate
+g006649,7,7,,protease,indeterminate
+g006680,4,4,,Terminase small subunit,presence/absence
+g006689,15,14-17,,DUF2812 domain-containing protein,indeterminate
+g006720,4,4,,3'-5' exoribonuclease,indeterminate
+g006724,4,4,ydaT,Bacterial toxin YdaT domain-containing protein,indeterminate
+g006736,5,5,ydaT,toxin YdaT domain-containing protein,indeterminate
+g006751,4,4,fldA,flavodoxin,indeterminate
+g006764,4,4,nifQ,Nitrogen fixation protein NifQ,indeterminate
+g006766,45,32-49,,Pathogenicity island 1 effector protein,indeterminate
+g007016,9,9,nanQ,Sugar isomerase,indeterminate
+g007034,4,4,nifZ,Nitrogen fixation protein NifZ,indeterminate
+g007043,6,6,,Phage protein,presence/absence
+g007106,3,3,recE,RecE family exodeoxyribonuclease,indeterminate
+g007109,2,2,,Phage tail tape measure protein,presence/absence
+g007114,4,4,,Phage tail tape measure protein,presence/absence
+g007116,3,3,,Tail length tape-measure protein,indeterminate
+g007119,3,3,,Phage tail protein,presence/absence
+g007122,5,5,,Bacteriophage protein,presence/absence
+g007127,5,5,,Internal virion protein,indeterminate
+g007132,2,2,,Transglycosylase,indeterminate
+g007147,3,3,,Phage tail length tape-measure protein 1,presence/absence
+g007174,2,2,,Pesticin C-terminus-like muramidase,presence/absence
+g007180,2,2,,TIR domain-containing protein,indeterminate
+g007183,3,3,,phage tail length tape measure family protein,presence/absence
+g007196,2,2,,Tail tape measure protein,presence/absence
+g007244,2,2,,hypothetical protein,indeterminate
+g007253,2,2,,tail fiber protein,presence/absence
+g007274,2,2,,recombinase family protein,presence/absence
+g007283,5,5,,Phage protein,presence/absence
+g007289,2,2,,Beta-glucoside-specific PTS transporter subunit IIABC,indeterminate
+g007292,6,6,,Tail protein,presence/absence
+g007303,3,3,dprA,DNA-processing protein DprA,indeterminate
+g007325,3,3,,ATP-binding protein,indeterminate
+g007326,2,2,,ATP-binding cassette domain-containing protein,presence/absence
+g007334,2,2,,Chemotaxis protein,indeterminate
+g007340,3,3,,DNA-binding protein,indeterminate
+g007350,2,2,parB,Integrating conjugative element%2C PFGI_1 class%2C ParB family protein,presence/absence
+g007353,2,2,,UDP-Gal::undecaprenolphosphate Gal-1-P transferase,indeterminate
+g007363,32,32-49,,integrating conjugative element protein,presence/absence
+g007365,2,2,,VENN motif pre-toxin domain-containing protein,indeterminate
+g007366,3,3,,anti-CBASS protein Acb1 family protein,indeterminate
+g007369,3,3,,anti-CBASS protein Acb1 family protein,indeterminate
+g007375,2,2,,Glycoside hydrolase family 1 protein,indeterminate
+g007385,11,10-12,wcaJ,undecaprenyl-phosphate glucose phosphotransferase,indeterminate
+g007390,2,2,,TIGR03752 family integrating conjugative element protein,presence/absence
+g007392,3,3,,Tyr recombinase domain-containing protein,presence/absence
+g007395,2,2,,caspase family protein,presence/absence
+g007404,3,3,trbL,P-type conjugative transfer protein TrbL,presence/absence
+g007444,2,2,,lasso peptide isopeptide bond-forming cyclase,indeterminate
+g007449,4,4,nifA,nif-specific transcriptional activator NifA,indeterminate
+g007521,3,3,nifV,homocitrate synthase,indeterminate
+g007524,7,7,wza,polysaccharide export protein,indeterminate
+g007571,3,3,drt3a,antiviral reverse transcriptase Drt3a,indeterminate
+g007572,2,2,,Prophage CP4-57 integrase,presence/absence
+g007578,32,32-49,,STY4528 family pathogenicity island replication protein,indeterminate
+g007592,2,2,,Phage integrase family site-specific recombinase,presence/absence
+g007624,3,3,,Phage tail protein,presence/absence
+g007628,3,3,,Phage tail protein,presence/absence
+g007640,3,3,,Tyr recombinase domain-containing protein,presence/absence
+g007643,2,2,,O-antigen polymerase,sequence-turnover
+g007659,2,2,,Phage tail protein,presence/absence
+g007675,3,3,,ABC-three component systems C-terminal domain-containing protein,presence/absence
+g007678,5,5,,Integrase,presence/absence
+g007679,2,2,,site-specific integrase,presence/absence
+g007688,4,4,nifS,cysteine desulfurase NifS,indeterminate
+g007690,2,2,,STY4528 family pathogenicity island replication protein,indeterminate
+g007691,22,18-22,rspA,L-talarate/galactarate dehydratase,indeterminate
+g007694,3,3,,Major tail sheath protein,indeterminate
+g007714,5,5,,AAA+ ATPase domain-containing protein,indeterminate
+g007717,2,2,,Amidohydrolase,indeterminate
+g007722,2,2,,HK97 family phage prohead protease,presence/absence
+g007745,20,18-22,recT,recombination protein RecT,indeterminate
+g007758,2,2,xerD,Site-specific recombinase XerD,presence/absence
+g007759,2,2,,DNA cytosine methyltransferase,indeterminate
+g007767,6,6,xerC,Tyrosine recombinase XerC,presence/absence
+g007780,9,9,yiaK,3-dehydro-L-gulonate 2-dehydrogenase,indeterminate
+g007794,2,2,,Bacteriophage T7 Gp4 DNA primase/helicase N-terminal domain-containing protein,presence/absence
+g007816,2,2,,Nucleoid-associated protein,indeterminate
+g007826,2,2,pdxI,Aldo/keto reductase,indeterminate
+g007830,32,32-49,,TIGR03756 family integrating conjugative element protein,presence/absence
+g007836,2,2,,DUF2971 domain-containing protein,indeterminate
+g007852,2,2,,Competence protein CoiA-like family protein,indeterminate
+g007858,4,4,yjeJ,YjeJ family protein,indeterminate
+g007860,2,2,,Phage repressor protein CI,presence/absence
+g007878,6,6,,D-tagatose 3-epimerase,indeterminate
+g007879,2,2,,Immunity protein 52 domain-containing protein,presence/absence
+g007912,2,2,,Phage Mu protein F like protein,presence/absence
+g007934,3,3,nifM,nitrogen fixation protein NifM,indeterminate
+g007942,3,3,trbJ,P-type conjugative transfer protein TrbJ,presence/absence
+g007945,6,6,,3-ketoacyl-ACP reductase,indeterminate
+g007955,2,2,lysR,LysR family transcriptional regulator,indeterminate
+g007956,17,14-17,lysR,LysR family transcriptional regulator,indeterminate
+g007960,2,2,,Type VI secretion protein,presence/absence
+g007964,2,2,,Replication protein O,indeterminate
+g007967,2,2,lysR,LysR family transcriptional regulator,indeterminate
+g007971,3,3,,Inner membrane protein,indeterminate
+g007974,2,2,lysR,LysR family transcriptional regulator,indeterminate
+g007987,2,2,,TIGR03749 family integrating conjugative element protein,presence/absence
+g007993,17,14-17,,Transcriptional regulator,indeterminate
+g008023,2,2,yajL,Chaperone protein HchA,indeterminate
+g008025,2,2,,Phage head morphogenesis protein,presence/absence
+g008030,3,3,ompR,Response regulator receiver,indeterminate
+g008032,2,2,,XRE family transcriptional regulator,indeterminate
+g008039,2,2,,Antitermination protein Q,indeterminate
+g008053,2,2,,DUF550 domain-containing protein,indeterminate
+g008054,2,2,,Replication protein,indeterminate
+g008074,2,2,,Mu-like prophage protein gp37,presence/absence
+g008076,2,2,,PFL_4703 family integrating conjugative element protein,presence/absence
+g008080,5,5,,hypothetical protein,indeterminate
+g008094,6,6,kstR2,HTH-type transcriptional repressor KstR2,indeterminate
+g008098,2,2,,hypothetical protein,indeterminate
+g008293,2,2,gp18,phage minor tail protein L,presence/absence
+g008294,6,6,,Inner membrane protein,indeterminate
+g008328,2,2,,Antibiotic biosynthesis monooxygenase,indeterminate
+g008343,17,14-17,yqgA,DUF554 domain-containing protein,indeterminate
+g008345,3,3,,Fimbrial chaperone,sequence-turnover
+g008353,2,2,,DUF6977 domain-containing protein,indeterminate
+g008363,5,5,,DUF3296 domain-containing protein,indeterminate
+g008383,2,2,,DUF2163 domain-containing protein,indeterminate
+g008385,2,2,,lasso peptide biosynthesis B2 protein,indeterminate
+g008388,6,6,,Tetratricopeptide repeat protein,indeterminate
+g008412,2,2,,Tail assembly protein,presence/absence
+g008423,2,2,pilL,Pilus assembly protein PilL,sequence-turnover
+g008429,3,3,kwaA,anti-phage protein KwaA,presence/absence
+g008431,3,3,,Terminase small subunit,presence/absence
+g008443,3,3,,hypothetical protein,indeterminate
+g008452,2,2,,Helix-turn-helix,indeterminate
+g008458,2,2,,Inovirus Gp2 family protein,presence/absence
+g008469,2,2,mdaB,NAD(P)H oxidoreductase YRKL%3B Putative NADPH-quinone reductase (Modulator of drug activity B)%3B Flavodoxin 2,indeterminate
+g008473,32,32-49,,Transglycosylase SLT domain-containing protein,indeterminate
+g008475,4,4,,DNA-invertase from lambdoid prophage Rac,presence/absence
+g008477,2,2,,Phage tail protein,presence/absence
+g008481,3,3,,Tail assembly protein,presence/absence
+g008484,2,2,,Transglycosylase SLT domain-containing protein,indeterminate
+g008487,35,32-49,ybgD,Fimbrial-type adhesion domain-containing protein,sequence-turnover
+g008489,2,2,unitary,tail protein,presence/absence
+g008503,3,3,,Fimbrial-like protein,sequence-turnover
+g008534,3,3,,Fimbrial chaperone,sequence-turnover
+g008550,3,3,ydaT,Bacterial toxin YdaT domain-containing protein,indeterminate
+g008570,2,2,,hypothetical protein,indeterminate
+g008578,2,2,,hypothetical protein,indeterminate
+g008590,2,2,,hypothetical protein,indeterminate
+g008603,3,3,,KPF-28 fimbria major subunit,sequence-turnover
+g008604,2,2,,Crp/Fnr family transcriptional regulator,indeterminate
+g008609,2,2,,Integrating conjugative element protein,presence/absence
+g008646,2,2,,Phage tail protein,presence/absence
+g008649,2,2,,hypothetical protein,indeterminate
+g009084,3,3,,hypothetical protein,indeterminate
+g009092,4,4,nifX,NifX protein,indeterminate
+g009105,7,7,,DUF2833 domain-containing protein,indeterminate
+g009122,3,3,,Oxidoreductase,indeterminate
+g009146,3,3,,hypothetical protein,indeterminate
+g009152,2,2,,hypothetical protein,indeterminate
+g009153,2,2,,Mor transcription activator family,indeterminate
+g012583,4,4,nifH,nitrogenase iron protein,indeterminate
+g013045,32,32-49,,PFL_4703 family integrating conjugative element protein,presence/absence
+g014231,2,2,rri1,Putative phage tail assembly protein,presence/absence
+g015027,6,6,,Phage protein,presence/absence
+g017580,2,2,,HK97-gp10 family putative phage morphogenesis protein,presence/absence

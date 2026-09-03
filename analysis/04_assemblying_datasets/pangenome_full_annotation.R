@@ -13,7 +13,7 @@
 
 
 # PART 1. Import gene annotations -------------------------------------------------
-hybrid_gffs_files <- list.files("./input_data/PIRATE_260_hybrid_chr_out/modified_gffs/",
+hybrid_gffs_files <- list.files("./input_data/PIRATE_260_hybrid_chr_hps0.6_out/modified_gffs/",
                                 full.names = TRUE, recursive = TRUE, 
                                 pattern = ".gff")
 
@@ -66,17 +66,18 @@ stopCluster(cl)
 
 # add pirate & core syntenic groups -----------------------------------------
 focal_genome_names = unique(pirate_anno$geno_id)
-pirate_lng <- fread("./input_data/PIRATE_260_hybrid_chr_out/PIRATE.gene_families.ordered.tsv",
+pirate_lng <- fread("./input_data/PIRATE_260_hybrid_chr_hps0.6_out/PIRATE.gene_families.ordered.tsv",
                 select = c("gene_family", "consensus_gene_name",
                            "consensus_product", "number_genomes", 
-                           "threshold", "average_dose",
+                           "threshold", "alleles_at_maximum_threshold", "average_dose",
                            "cluster", "cluster_order", focal_genome_names))
 
 pirate_lng <- melt(pirate_lng, 
                    id.vars = c("gene_family", "number_genomes",
                                "consensus_gene_name",
                                "consensus_product",
-                               "threshold", "average_dose",
+                               "threshold", "alleles_at_maximum_threshold",
+                               "average_dose",
                                "cluster", "cluster_order"),
                    variable.name = "geno_id", 
                    value.name = "fus_locus_tag"
@@ -301,7 +302,7 @@ gene_integrons <- foverlaps(
   integrons_dt,
   by.x = c("geno_id", "gstart", "gend"),
   by.y = c("geno_id", "rstart", "rend"),
-  type = "any",     # gene fully inside phage region
+  type = "any",     # gene fully inside region
   nomatch = NA
 )
 
@@ -358,8 +359,58 @@ pirate_anno <- merge(pirate_anno,
 
 
 # ISEScan  ----------------------------------------------------------------
+IS_files <- list.files("./input_data/kpne_hybrid_isescan/",
+                       recursive = TRUE, full.names = TRUE,
+                       pattern = ".gff")
 
-# TnCentral ---------------------------------------------------------------
+IS_files <- IS_files[!grepl("proteome", IS_files)]
+
+IS_anno_dt <- lapply(IS_files, function(gff){
+
+    is_anno <- fread(gff, skip = "##", header = FALSE, sep = "\t",
+                   col.names = c("seqid","source","type","start","end",
+                                 "score","strand","phase","attributes"))
+    
+    is_anno[type!="terminal_inverted_repeat"]
+})
+
+
+IS_anno_dt <- rbindlist(IS_anno_dt)
+
+IS_anno_dt[,c("source", "type", "score", "phase"):= NULL]
+
+IS_anno_dt[, c("is_fam", "is_cluster") := tstrsplit(attributes, ";", keep=c(2,3))]
+
+IS_anno_dt[, is_fam := gsub("family=", "", is_fam)]
+
+IS_anno_dt[, is_cluster := gsub("cluster=", "", is_cluster)]
+
+IS_anno_dt[, geno_id := sub("_[^_]+$", "", seqid)]
+
+IS_anno_dt <- IS_anno_dt[, .(
+  geno_id,
+  rstart = start,
+  rend   = end,
+  is_fam,
+  is_cluster
+)]
+
+setkey(IS_anno_dt, geno_id, rstart, rend)
+setkey(genes_dt, geno_id, gstart, gend)
+
+gene_is <- foverlaps(
+  genes_dt,
+  IS_anno_dt,
+  by.x = c("geno_id", "gstart", "gend"),
+  by.y = c("geno_id", "rstart", "rend"),
+  type = "within",     # gene fully inside phage region
+  nomatch = NA
+)
+
+pirate_anno <- merge(pirate_anno, 
+                     gene_is[!is.na(is_fam), .(locus_tag, is_fam,is_cluster)],
+                     all.x = TRUE, by = "locus_tag")
+
 
 
 # get genome total length -------------------------------------------------
@@ -378,6 +429,15 @@ setDT(tot_length_dt)
 
 pirate_anno <- merge(pirate_anno, tot_length_dt,
                   all.x = TRUE, by =c("geno_id"))
+
+
+
+# Determine if there are any plasmid copies -------------------------------
+# pirate re-run including plasmid sequences
+
+# plasmid_cnv
+
+
 
 # intermediate 
 fwrite(pirate_anno, paste0(outdir_dat, "/all_pirate_anno_cogs.csv"))
@@ -409,3 +469,4 @@ pirate_anno <- merge(pirate_anno, id_msu_ags,
                      all.x = TRUE, by = c("fus_locus_tag","geno_id"))
 
 fwrite(pirate_anno, paste0(outdir_dat, "/all_pirate_anno_full.csv"))
+

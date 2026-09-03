@@ -140,11 +140,12 @@ outline_grey_blocks <- function(rows, positions, y_tops, row_h,
 
 # ── Panel 1: Accessory blocks ─────────────────────────────────────────────
 screen(2)               # first sub-screen (screens 1-4 already taken)
-par(mar = c(0.75, 1, 0.25, 2))
+par(mar = c(0.75, 1, 0.25, 2),
+    oma = c(0,0,1,0))
 plot.new()
 plot.window(xlim = c(0, 1), ylim = c(0, 1))
 draw_panel_rows(acc_rows)
-mtext("b", side = 3, font = 2, adj = -0.05)
+mtext("b", side = 3, font = 2, outer = TRUE, adj = 0.51, line = -2)
 mtext("remove accessory blocks (grey)", side = 1, line = -1, cex = 0.7, col = "grey40", font = 2)
 close.screen(2)
 

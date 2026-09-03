@@ -1,0 +1,82 @@
+
+# 1. For a tree, compute freq & subtree length for each internal node
+analyse_pi_desc_subtrees  <- function(tree, n_genomes) {
+  
+  # tree metrics
+  Ntip <- length(tree$tip.label)
+  Nnode <- tree$Nnode
+  internal_nodes <- (Ntip + 1):(Ntip + Nnode)
+  
+  out <- lapply(internal_nodes, function(node){
+    
+    # get descendants nodes
+    desc_tips <- phytools::getDescendants(tree, node)
+    # return tips
+    desc_tips <- desc_tips[desc_tips <= Ntip]
+    
+    freq <- length(desc_tips)
+    
+    # subtree: keep only those tips and sum branch lengths
+    # use keep.tip; it preserves edge.length for the pruned tree
+    subtree <- keep.tip(tree, tree$tip.label[desc_tips])
+    subtree_br_len <- sum(subtree$edge.length)
+    data.frame(node = node, freq = freq, subtree_br_len = subtree_br_len)
+    
+  })
+  
+  # remove the root node
+  return(rbindlist(out)[freq != n_genomes])
+  
+}
+
+
+
+
+# 2. Main simulation: many trees, collect results
+simulate_freq_vs_diversity <- function(n_genomes, n_trees, seed = 42, num_core = 10) {
+  set.seed(seed)
+  
+  # Set up parallel cluster
+  cl <- parallel::makeCluster(num_core)
+  doParallel::registerDoParallel(cl)
+  
+  # Export custom functions to workers
+  parallel::clusterExport(cl, varlist = c("analyse_pi_desc_subtrees"), envir = environment())
+  
+  # Run in parallel
+  results <- foreach(t = seq_len(n_trees), .combine = "rbind",
+                     .packages = c("ape", "phytools", "data.table")) %dopar% {
+                       tree <- rcoal(n_genomes)
+                       tree_nodes_dt <- analyse_pi_desc_subtrees (tree, n_genomes)
+                       tree_nodes_dt$tree_id <- t
+                       # wrap inside a list so .combine=rbindlist can concatenate properly
+                       tree_nodes_dt[, c("tree_id", "node", "freq", "subtree_br_len")]
+                     }
+  
+  # Clean up
+  parallel::stopCluster(cl)
+  foreach::registerDoSEQ()
+  
+  return(results)
+}
+
+
+# Global variables --------------------------------------------------------
+tot_pangenome_size = 260
+n_sim_trees = 10000
+
+# Run simulations (adjust n_tips, n_trees to taste; beware runtime if n_trees large)
+
+# start timer
+start.time <- Sys.time()
+
+res <- simulate_freq_vs_diversity(n_genomes = tot_pangenome_size, n_trees = n_sim_trees)
+
+# get duration
+end.time <- Sys.time()
+end.time - start.time# 260 genomes, 10,000; Time difference of 5.397505 mins
+
+# Normalise/scaled results by mean freq subtree_br_len
+res[, t_hat := subtree_br_len/mean(subtree_br_len), freq]
+
+fwrite(res, paste0(outdir_dat,"/neutral_sim_260_ntree_10000.csv"))

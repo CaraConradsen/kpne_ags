@@ -4,7 +4,7 @@ COG_dt <- data.frame(
   COG_letter = c(
     "A","B","C","D","E","F","G","H","I","J",
     "K","L","M","N","O","P","Q","R","S","T",
-    "U","V","W","X","Y","Z"
+    "U","V","W","X","Y","Z",""
   ),
   COG_function = c(
     "RNA processing and modification",
@@ -32,9 +32,10 @@ COG_dt <- data.frame(
     "Extracellular structures",
     "Mobilome",
     "Nuclear structure",
-    "Cytoskeleton"
+    "Cytoskeleton",
+    "Unassigned"
   ),
-  COG_num = 1:26,
+  COG_num = 1:27,
   stringsAsFactors = FALSE
 )
 
@@ -60,6 +61,6 @@ COG_dt[, desc := factor(desc,
 
 setorderv(COG_dt, cols = c("desc", "COG_num"))
 
-COG_dt$broad_ord = 1:26
+COG_dt$broad_ord = 1:27
 
 COG_dt[, desc := as.character(desc)]

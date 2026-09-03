@@ -1,7 +1,7 @@
 
 piS_dist <-fread(paste0(outdir_dat, "/ag_age_S_dt.csv"))
 
-IQR_threshold = median(piS_dist$pi_s) + (IQR(piS_dist$pi_s) * 3)
+IQR_threshold = round(median(piS_dist$pi_s) + (IQR(piS_dist$pi_s) * 3), digits = 3)
 
 
 ag_gene_dat <- unique(fread(paste0(outdir_dat, "/all_pirate_anno_full.csv"), 
@@ -17,44 +17,15 @@ non_syn <- ag_gene_dat[acrs_msu==1 | acrs_jun ==1, gene_family]
 # pi outliers
 pis_out <- fread(paste0(outdir_dat, "/piS_3IQR_outliers.csv"))$gene_family
 
-# genes without multiple parsimonious gains
-set_2_ags = fread(paste0(outdir_dat, "/set_2_names.csv"))$gene_family
-
-multi_gains = ag_gene_dat[!gene_family %chin% set_2_ags, gene_family]
-
 # calcualte euler
 fit <- euler(
   list(
     "non-syntenic" = non_syn,
-    "piS outliers"  = pis_out,
-    "multiple gains"   = multi_gains
+    "piS outliers"  = pis_out
   ),
   shape = "ellipse"  # allows ellipses for a better fit when circles can't be perfect
 )
 
-
-
-# parsimony information ---------------------------------------------------
-
-phylo_info <- fread(, paste0(outdir_dat, "/phylo_info.csv"))
-
-# remove paralogs
-phylo_info <- phylo_info[pis_out==0]
-
-box_plots <- phylo_info[syn_jun == 1,.(gene_family, consistencyindex, par_gains)]
-
-box_plots[, ci_bin:=sprintf("%1.2f",round(consistencyindex / 0.05) * 0.05)]
-
-box_plots[, ci_bin:= factor(ci_bin, levels = sprintf("%1.2f", seq(0,1,0.05)))]
-
-# Split gains by ci_bin (drops empty levels)
-gain_list <- split(box_plots$par_gains, box_plots$ci_bin, drop = TRUE)
-
-# Remove empty groups
-gain_list_clean <- gain_list[sapply(gain_list, length) > 0]
-
-positions <- match(names(gain_list_clean),
-                   levels(box_plots$ci_bin))
 
 # plot -----------------------------------------------------------------
 
@@ -64,15 +35,15 @@ png(paste0(outdir_fig,"/filtering_plot.png"),
     pointsize = 11, type = "cairo")
 
 
-
-split.screen(rbind(c(0.2, 0.7, 0.7, 1),
-                   c(0, 0.55, 0.53, 0.7),
-                   c(0, 0.55, 0.36, 0.53),
-                   c(0, 0.55, 0.19, 0.36),
-                   c(0, 0.55, 0, 0.19),
-                   c(0.5, 1, 0.3, 0.7),
-                   c(0.6, 1, 0, 0.3))
+split.screen(rbind(c(0, 0.45, 0.5, 0.9),
+                   c(0.5, 1, 0.745, 0.97),
+                   c(0.5, 1, 0.52, 0.745),
+                   c(0.5, 1, 0.295, 0.52),
+                   c(0.5, 1, 0.07, 0.295),
+                   c(0, 0.45, 0.1, 0.45),
+                   c(0.1, 0.5, 0, 0.1))
 )
+
 
 screen(1)
 
@@ -120,7 +91,10 @@ text(IQR_threshold,1500,
 mtext(expression(pi[S]), side =1, line = 2)
 
 mtext("a", side = 3, outer = TRUE,
-      adj = 0, font = 2)
+      adj = 0, line = -4, font = 2)
+
+# mtext("a", side = 3, outer = TRUE,
+#       adj = 0, font = 2)
 
 # v <- c(
 #   grconvertX(u[1:2], "user", "ndc"),
@@ -158,13 +132,17 @@ close.screen(1)
 source("./analysis/ms_figures/synteny_schematic.R")
 
 
-# Parsimony plot ----------------------------------------------------------
+# Venn diagram ------------------------------------------------------------
+
+
+# Prepare a palette of 3 colors with R colorbrewer:
+myCol <- brewer.pal(3, "Pastel2")
 
 screen(6)
 
-# parsimonious gains vs. CI
 par(mar = c(4,4,0.25,0.25),
-    bty = "n")
+    bty = "n",
+    oma = c(0,1,0,0))
 
 plot(NULL, bty = "n",
      xlim = c(1, 21),
@@ -174,70 +152,12 @@ plot(NULL, bty = "n",
      xlab = "",
      ylab = "")
 
-axis(at  = 20, labels = "Number of gains",
-     side = 2, tick = FALSE,
-     line = 1.5)
-
-axis(at  = 10.5, labels = "Consistency index", 
-     side = 1, tick = FALSE, 
-     line = 1.5)
-
-axis(side = 2, at = seq(0,40,10),
-     labels = seq(0,40,10), las = 2)
-
-axis(side = 1, at = seq(1,21,4),
-     labels = seq(0,1,0.2))
-
-abline(h = 1, lty = 2)
-
-# Add violins
-for (i in seq_along(gain_list)) {
-  vioplot(gain_list[[i]],
-          drawRect = FALSE,
-          col = rgb(0.8, 0.54, 0.18, alpha = 0.75),
-          border = rgb(0.8, 0.54, 0.18, alpha = 1),
-          at = positions[i], 
-          bty = "n",   
-          boxwex = 1,
-          add = TRUE)
-  
-  boxplot(gain_list[[i]], 
-          at = positions[i],
-          yaxt = "n",
-          outline = FALSE,
-          boxwex = 0.5,
-          staplewex = 0,
-          outwex = 1.5,
-          col = "gray20",
-          border = "gray20",
-          lty = 1,
-          pch = 16,
-          add = TRUE)
-  
-  points(positions[i],
-         median(gain_list[[i]]),
-         pch = 21,
-         cex = 0.5,
-         bg = "white")
-}
-
-# text(16.2, 1, "Number of gains = 1", 
-#      col = "grey40", pos = 3, cex = 0.5)
-
-mtext("c", side = 3, 
+mtext("c", side = 2,
+      outer = TRUE,
+      las = 2,
       font = 2,
-      adj = -0.28)
-
-close.screen(6)
-
-
-# Venn diagram ------------------------------------------------------------
-
-
-# Prepare a palette of 3 colors with R colorbrewer:
-myCol <- brewer.pal(3, "Pastel2")
-
-screen(7)
+      adj = 0,
+      padj = 5)#17
 
 # Map base-R screen coordinates to grid viewport
 vp <- baseViewports()
@@ -251,7 +171,7 @@ pushViewport(viewport(
   just   = c("centre", "centre")
 ))
 
-venn_cols <- c("grey30","#E63946", "grey70")
+venn_cols <- c("grey70","#E63946")# "grey30",
 
 venn <- plot(fit,
      fills = list(
@@ -268,8 +188,7 @@ venn <- plot(fit,
      labels = list(
        labels = c(
          "non-syntenic",
-         "\u03C0s outliers",
-         "parsimonious gains >1"
+         "\u03C0s outliers"
        ),
        fontfamily = "sans",
        cex        = 0.6
@@ -286,11 +205,84 @@ venn <- plot(fit,
 
 grid.draw(venn)
 
-grid.text("d", x = unit(0.02, "npc"), y = unit(0.95, "npc"),
-          just = "left", gp =  gpar(fontface = "bold"))
 
+close.screen(6)
+
+
+
+# Parsimony plot ----------------------------------------------------------
+
+screen(7)
+
+# # parsimonious gains vs. CI
+# par(mar = c(4,4,0.25,0.25),
+#     bty = "n",
+#     oma = c(0,1,0,0))
+# 
+# plot(NULL, bty = "n",
+#      xlim = c(1, 21),
+#      ylim = c(0, 45),
+#      yaxt = "n", 
+#      xaxt = "n",
+#      xlab = "",
+#      ylab = "")
+# 
+# axis(at  = 20, labels = "Number of gains",
+#      side = 2, tick = FALSE,
+#      line = 1.5)
+# 
+# axis(at  = 10.5, labels = "Consistency index", 
+#      side = 1, tick = FALSE, 
+#      line = 1.5)
+# 
+# axis(side = 2, at = seq(0,40,10),
+#      labels = seq(0,40,10), las = 2)
+# 
+# axis(side = 1, at = seq(1,21,4),
+#      labels = seq(0,1,0.2))
+# 
+# abline(h = 1, lty = 2)
+# 
+# # Add violins
+# for (i in seq_along(gain_list)) {
+#   vioplot(gain_list[[i]],
+#           drawRect = FALSE,
+#           col = rgb(0.8, 0.54, 0.18, alpha = 0.75),
+#           border = rgb(0.8, 0.54, 0.18, alpha = 1),
+#           at = positions[i], 
+#           bty = "n",   
+#           boxwex = 1,
+#           add = TRUE)
+#   
+#   boxplot(gain_list[[i]], 
+#           at = positions[i],
+#           yaxt = "n",
+#           outline = FALSE,
+#           boxwex = 0.5,
+#           staplewex = 0,
+#           outwex = 1.5,
+#           col = "gray20",
+#           border = "gray20",
+#           lty = 1,
+#           pch = 16,
+#           add = TRUE)
+#   
+#   points(positions[i],
+#          median(gain_list[[i]]),
+#          pch = 21,
+#          cex = 0.5,
+#          bg = "white")
+# }
+# 
+# mtext("c", side = 2,
+#       outer = TRUE,
+#       las = 2,
+#       font = 2,
+#       adj = 0,
+#       padj = -12.5)
 
 close.screen(7)
+
 
 close.screen(all.screens=TRUE)
 

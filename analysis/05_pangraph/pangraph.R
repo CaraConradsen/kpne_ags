@@ -149,7 +149,7 @@ core_dt <- nodes_dt[count == n_strains & n_strains == max_genomes,]
 # Plot Core MSU order ---------------------------------------------------------------
 
 # Left panel: Phylogenetic tree 
-core_gub_tree_geno <- read.tree("./input_data/bootstrapped_pirate_gubbins/boot_gub_pir_100.final_bootstrapped_tree.tre")
+core_gub_tree_geno <- read.tree("./input_data/bootstrapped_pangraph_gubbins/boot_gub_pang_100.final_bootstrapped_tree.tre")
 
 core_gub_tree <- core_gub_tree_geno
 
@@ -233,6 +233,10 @@ msu_paths_dt[, ord_msu := paste(unlist(msu_mergers), collapse=","), by = geno_id
 # fwrite(path_dt, paste0(outdir_dat, "/path_dt.csv"))
 
 most_common_ord_msu <- msu_paths_dt[, .N, by = ord_msu][which.max(N), ord_msu]
+
+writeLines(most_common_ord_msu, paste0(outdir_dat, "/most_common_ord_msu.txt"))
+
+
 
 msu_cols = data.frame(msu_mergers = unlist(strsplit(most_common_ord_msu, ",")),
                       cols = colorRampPalette(c("#420D55","blueviolet",
@@ -341,7 +345,7 @@ nblocks <- nrow(msu_cols)       # 5 squares per row
 sq_size <- 1       # both width and height = 1
 
 # consensus "SPARK_1006_C1"
-focal_geno = c("SPARK_1294_C1","SPARK_1006_C1",
+focal_geno = c("SPARK_1867_C1","SPARK_1006_C1",
                unordered_msu_genos, "SPARK_587_C1")
 
 # png(filename = paste0(outdir_fig, "/msu_subset260_unordered_msu_labelled.png"),
@@ -349,12 +353,12 @@ focal_geno = c("SPARK_1294_C1","SPARK_1006_C1",
 #     units = "in",res = 300)
 
 png(filename = paste0(outdir_fig, "/msu_subset260_unordered_msu.png"),
-    width = 9.69, height = 10.74, type = "cairo",
+    width = 10.29, height = 10.74, type = "cairo",
     units = "in",res = 300)
 
 # plot Core units + phylogenetic tree
 layout(matrix(c(1,2,3,4), nrow=2, byrow = TRUE), 
-       widths=c(1,2), heights = c(2,4))  # left = tree, right = other plot
+       widths=c(1,2.5), heights = c(2,4))  # left = tree, right = other plot
 plot.new()
 
 msu_plot_lengths <- merge(msu_plot[geno_id == "SPARK_1006_C1", 
@@ -364,7 +368,7 @@ msu_plot_lengths[, labs:= paste0(msu_length, " bp")]
 
 setorderv(msu_plot_lengths,cols = "order")
 
-par(mar = c(4,6,0.5,1))
+par(mar = c(4,7,0.5,1))
 
 barp_y_lim = pretty(range(msu_plot_lengths$msu_length))[-7] 
 
@@ -404,7 +408,7 @@ plot(sub_tree,cex=0.65,
 
 
 # Create empty plot
-par(mar = c(0,6,1,1))
+par(mar = c(0,7,1,1))
 plot(
   0, 0, type = "n",
   bty= "n",
@@ -437,10 +441,14 @@ for (i in sub_tree$tip.label) {
              length = 0.05, col = "white")
     }
   }
-  label_txt <- if (!i %in% c("SPARK_1006_C1","SPARK_587_C1","SPARK_1294_C1")) unique(dat$geno_id) else paste0(unique(dat$geno_id), "\n(consensus)")
+  label_txt <- if (!i %in% c("SPARK_1006_C1","SPARK_587_C1","SPARK_1867_C1")){
+    paste(unlist(ST_labels[geno_id==unique(dat$geno_id)]), collapse = ", ")
+    }else{
+    paste0(paste(unlist(ST_labels[geno_id==unique(dat$geno_id)]), collapse = ", "),
+           "\n(consensus)")} 
   
   axis(side = 2, tick = FALSE, las = 2,
-       cex.axis = 0.75,
+       cex.axis = 0.65,
        at = y, 
        labels = label_txt)
   t=t+1

@@ -330,16 +330,3 @@ fwrite(msu_regions_anchored, paste0(outdir_dat, "/msu_regions_anchored.csv"))
 
 
 
-# Check stuff -------------------------------------------------------------
-post_pi_fams <- fread(paste0(outdir_dat, "/post_pi_gene_families.csv"))
-
-rough_calculations <- unique(msu_regions_anchored[gene_family %chin% post_pi_fams$gene_family, 
-                                           .(gene_family, anchor)])
-
-anchored_ags <- unique(rough_calculations[anchor != "", gene_family])
-
-unanchored_ags <- unique(rough_calculations[!gene_family %chin% anchored_ags, gene_family])
-
-cat("total ", length(unique(rough_calculations$gene_family)))
-cat("anchored ", length(anchored_ags))
-cat("unanchored ", length(unanchored_ags))

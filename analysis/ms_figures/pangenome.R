@@ -44,8 +44,13 @@ layout(mat, widths = c(1,0.75,0.75),
 
 # Add phylogenetic tree
 par(mar = c(2,1,3,1))
-tree <- read.tree("./input_data/bootstrapped_pirate_gubbins/boot_gub_pir_100.final_bootstrapped_tree.tre")
+tree <- read.tree("./input_data/bootstrapped_pangraph_gubbins/boot_gub_pang_100.final_bootstrapped_tree.tre")
 ST_groups <- unique(pan_anno[,.(geno_id, ST)])
+
+# Choose a representative ST307 genome
+start_tip <- tree$tip.label[tree$tip.label %in% ST_groups[ST == "ST307", geno_id]][1]
+
+tree <- rotateConstr(tree, start_tip)
 
 # get colours
 ST_cols = ST_groups[,.(n=.N), ST][n>1, .(ST)]
@@ -175,39 +180,39 @@ for(i in unique(ST_groups$ST)){
   
   for(block in blocks){
     draw_clade_arc(block, col="grey40", lwd= 1.75, 
-                   label_text= ifelse(i!="ST490", i, ""))
+                   label_text= i) #ifelse(i!="ST490", i, ""))
   }
-  
-  if(i=="ST490"){
-    split_idx <- idx[ceiling(length(idx)/2)]
-    xpos <- lp$xx[split_idx] * 1.22
-    ypos <- lp$yy[split_idx]
+  # 
+  # if(i=="ST490"){
+  #   split_idx <- idx[ceiling(length(idx)/2)]
+  #   xpos <- lp$xx[split_idx] * 1.22
+  #   ypos <- lp$yy[split_idx]
+  # 
+  #   label_angle <- atan2(ypos, xpos)
+  #   angle_deg <- label_angle * 180 / pi
+  # 
+  #   # Flip text if on left side
+  #   on_left <- xpos < 0
+  #   if(on_left){
+  #     angle_deg <- angle_deg + 180
+  #     adj_val <- c(1, 0.5)  # right-justified
+  #   } else {
+  #     adj_val <- c(0, 0.5)  # left-justified
+  #   }
+  # 
+  #   text(x = xpos, y = ypos - 0.01,
+  #        labels = "ST490",
+  #        srt = angle_deg,
+  #        adj = adj_val,
+  #        cex = 0.5,
+  #        font = 2)
+  # 
+  #   segments(xpos + 0.025, ypos - 0.035,
+  #            xpos + 0.025, ypos + 0.01,
+  #            col = "grey30",
+  #            lwd=2, lend=2)
 
-    label_angle <- atan2(ypos, xpos)
-    angle_deg <- label_angle * 180 / pi
-
-    # Flip text if on left side
-    on_left <- xpos < 0
-    if(on_left){
-      angle_deg <- angle_deg + 180
-      adj_val <- c(1, 0.5)  # right-justified
-    } else {
-      adj_val <- c(0, 0.5)  # left-justified
-    }
-
-    text(x = xpos, y = ypos - 0.01,
-         labels = "ST490",
-         srt = angle_deg,
-         adj = adj_val,
-         cex = 0.5,
-         font = 2)
-
-    segments(xpos + 0.025, ypos - 0.035,
-             xpos + 0.025, ypos + 0.01,
-             col = "grey30",
-             lwd=2, lend=2)
-
-  }
+  # }
   
 }
 

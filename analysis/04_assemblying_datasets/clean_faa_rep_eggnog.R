@@ -1,6 +1,6 @@
 # export clean faa for eggnog mapper
 
-rep_faa_dir <- "./input_data/PIRATE_260_hybrid_chr_out/representative_sequences.faa"
+rep_faa_dir <- "./input_data/PIRATE_260_hybrid_chr_hps0.6_out/representative_sequences.faa"
 
 rep_faa <- readAAStringSet(rep_faa_dir)
 
