@@ -224,7 +224,7 @@ ag_theta_dt <- summarise_genes(sites_combined_dt)
 combined_pi_dt <- ag_theta_dt[, .(
   pi_s     = mean(pi_s),
   gene_length = mean(gene_length),
-  seg_total = as.integer(mean(seg_s_sites))
+  seg_sites = as.integer(mean(seg_s_sites))
 ), by = gene_family]
 
 IQR_threshold = median(combined_pi_dt$pi_s) + 3*IQR(combined_pi_dt$pi_s)
@@ -232,6 +232,14 @@ quantile(combined_pi_dt$pi_s, probs = 0.9)
 
 fwrite(combined_pi_dt[pi_s > IQR_threshold, .(gene_family)],
        paste0(outdir_dat, "/piS_3IQR_outliers.csv"))
+
+# add back freq
+combined_pi_dt <- merge(combined_pi_dt,
+                        unique(pangraph_anno[,.(gene_family,number_genomes)]),
+                        all.x = TRUE, by = "gene_family")
+
+setnames(combined_pi_dt, "number_genomes", "freq")
+
 
 fwrite(combined_pi_dt, paste0(outdir_dat, "/ag_age_S_dt.csv"))
 
