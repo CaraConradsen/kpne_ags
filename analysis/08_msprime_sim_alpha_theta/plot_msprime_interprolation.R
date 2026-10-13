@@ -1,13 +1,16 @@
 # output taken from determine_alpha_and_theta.py
 
 interpo_data <- fread(paste0(outdir_dat, "/alpha_theta_curve.csv"))
+alpha_dt <- fread(paste0(outdir_dat, "/alpha_hat.csv"))
 
-R_obs  = 0.600
-a_hat  = 3.395
-pi_obs = 0.012
-pib_hat = 0.7258                      # E[pi_branch | alpha_hat]
-th_hat  = 2 * pi_obs / pib_hat        # 0.03307
+R_obs  = alpha_dt$pi_obs/alpha_dt$thetaw_obs
+a_hat  = alpha_dt$alpha_hat
 
+
+png(paste0(outdir_fig,"/interpolation_alpha.png"),
+    width = 18, height = 16, units = "cm", res = 300,
+    pointsize = 12, type = "cairo")
+par(mar=c(4,4,0.5,0.5))
 
 # major ticks in alpha, evenly spread on the log scale
 major <- c(0, 1, 3, 10, 30, 100, 300)
@@ -44,3 +47,4 @@ text(log10(1 + a_hat), 0.2, bquote(hat(alpha) == .(round(a_hat, 2))),
 text(log10(1 + a_hat), R_obs +0.02, bquote("Core" ~ pi[S] / theta[W] == .(sprintf("%.2f", R_obs))),
      pos = 4,cex = 0.9, offset = 0.2)
 
+dev.off()

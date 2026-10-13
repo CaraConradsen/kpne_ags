@@ -2,49 +2,20 @@
 
 core_anno <- fread(paste0(outdir_dat, "/all_pirate_anno_full.csv"), 
                    select = c("geno_id", "gene_family", "locus_tag", "fus_locus_tag", 
-                              "number_genomes", "start","end", "average_dose",
+                              "freq", "start","end", "max_dose",
                               "strand","ST","ag_type", "gene_length"))
 
 
 # remove get only core genes and remove paralogs
-core_anno <- core_anno[ag_type=="core"][average_dose <= 1]
+core_anno <- core_anno[ag_type=="core"][max_dose <= 1]
 
 # number of genomes in pangenome
 tot_pangenome_size = length(unique(core_anno$geno_id))
 
 list_unique_cores = unique(core_anno$gene_family)
 
-
-# fission/fusion list -----------------------------------------------------
-
-core_anno[, n:=.N, by = c("gene_family", "geno_id")]
-
-# Filter rows where n > 1
-multi_loci <- core_anno[n > 1]
-
-# Group by gene_family and geno_id, collect locus_tags
-f_loci <- multi_loci[, .(locus_tags = list(locus_tag)), by = .(gene_family, geno_id)]
-
-# Now collapse by gene_family into a list of lists
-f_loci <- f_loci[, .(loci_per_geno = list(locus_tags)), by = gene_family]
-
-# Convert to named list
-gene_family_list <- setNames(f_loci$loci_per_geno, f_loci$gene_family)
-
-# Get gene alignments and control for fission/fusion -----------------------
-
-# function to collapse fission/fusion loci
-collapse_alignment <- function(dna) {
-  
-  mat <- as.matrix(dna)
-  
-  merged <- apply(mat, 2, function(col) {
-    bases <- col[col != "-"]
-    if (length(bases) == 0) "-" else bases[1]
-  })
-  
-  DNAString(paste0(merged, collapse = ""))
-}
+# one locus per genome per family after fission/fusion removal
+stopifnot(core_anno[, .N, by = .(gene_family, geno_id)][, all(N == 1)])
 
 # set up directories
 
@@ -67,18 +38,7 @@ for (i in list_unique_cores) {
   sampled_loci <- core_anno[gene_family == i, locus_tag]
   temp_string  <- temp_string[names(temp_string) %in% sampled_loci]
   
-  if (length(gene_family_list[[i]]) >= 1) {
-    normies <- temp_string[!names(temp_string) %in% unlist(gene_family_list[[i]])]
-    collapsed_loc <- lapply(gene_family_list[[i]], function(fus_loc) {
-      collapse_alignment(temp_string[names(temp_string) %in% fus_loc])
-    })
-    collapsed_loc     <- DNAStringSet(unlist(collapsed_loc))
-    collapsed_loc_tag <- sapply(gene_family_list[[i]], `[`, 1)
-    collapsed_loc     <- DNAStringSet(setNames(collapsed_loc, collapsed_loc_tag))
-    temp_string       <- c(normies, DNAStringSet(collapsed_loc))
-  }
-  
-  if (length(temp_string) == 0) next
+  if (length(temp_string) < 2) next
   
   writeXStringSet(temp_string,
                   paste0(fasta_dir, i, ".fasta"),

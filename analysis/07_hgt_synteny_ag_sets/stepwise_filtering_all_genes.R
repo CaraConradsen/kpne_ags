@@ -1,6 +1,6 @@
 
 id_ags <- unique(fread(paste0(outdir_dat, "/all_pirate_anno_full.csv"), 
-                       select = c("gene_family","number_genomes", "average_dose", 
+                       select = c("gene_family","freq", "max_dose", 
                                   "ag_type", "acrs_msu", "acrs_jun")))
 
 dt <- copy(id_ags)
@@ -25,16 +25,16 @@ syntenic_ags <- syntenic_ags[acrs_msu!= 1][acrs_jun!=1]$gene_family
 dt1 <- dt
 n1 <- nrow(dt1)
 
-# Step 2 — Remove core
-dt2 <- dt1[ag_type != "core"]
+# Step 2 — Remove paralogs
+dt2 <- dt1[max_dose == 1]
 n2 <- nrow(dt2)
 
-# Step 3 — Remove paralogs
-dt3 <- dt2[average_dose <= 1]
+# Step 3 — Remove core
+dt3 <- dt2[ag_type != "core"]
 n3 <- nrow(dt3)
 
 # Step 4 — Remove singletons
-dt4 <- dt3[number_genomes != 1]
+dt4 <- dt3[freq != 1]
 n4 <- nrow(dt4)
 fwrite(dt4, paste0(outdir_dat, "/pre_filter_ags.csv"))
 
@@ -50,8 +50,8 @@ fwrite(dt6[,.(gene_family)], paste0(outdir_dat, "/set_1_names.csv"))
 step_summary <- data.table(
   step = c(
     "Total gene families",
-    "After removing core",
     "After removing paralogs",
+    "After removing core",
     "After removing singletons",
     "After removing piS outliers",
     "After removing non-syntenic"

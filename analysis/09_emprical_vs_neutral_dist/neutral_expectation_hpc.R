@@ -10,36 +10,36 @@ suppressPackageStartupMessages({
 # of the sorted unique lengths.
 
 outdir_dat <- Sys.getenv("OUTDIR_DAT", unset = ".")
-theta_hat  <- as.numeric(Sys.getenv("THETA_HAT", unset = "0.033"))
-per_task   <- as.integer(Sys.getenv("GENES_PER_TASK", unset = "6"))
-n_cores    <- as.integer(Sys.getenv("SLURM_CPUS_PER_TASK", unset = "6"))
+theta_hat  <- as.numeric(Sys.getenv("THETA_HAT", unset = "0.0312"))
+per_task   <- as.integer(Sys.getenv("GENES_PER_TASK", unset = "7"))
+n_cores    <- as.integer(Sys.getenv("SLURM_CPUS_PER_TASK", unset = "7"))
 
 task <- as.integer(Sys.getenv("SLURM_ARRAY_TASK_ID", unset = NA))
 if (is.na(task)) stop("SLURM_ARRAY_TASK_ID not set")
 
 ag_lens <- sort(unique(as.integer(
-  readLines(file.path(outdir_dat, "syntenic_ag_gene_lengths.txt")))))
+  readLines(file.path(outdir_dat, "syntenic_ag_syn_sites.txt")))))
 
 first <- (task - 1L) * per_task + 1L
 last  <- min(task * per_task, length(ag_lens))
 if (first > length(ag_lens)) { cat("nothing to do\n"); quit(save = "no") }
 m_set <- ag_lens[first:last]
 
-outdir <- file.path(outdir_dat, "ag_expected_sites_per_len")
+outdir <- outdir_dat
 dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 
-cat("task", task, "| m =", paste(m_set, collapse = ", "), "\n")
+cat("task", task, "| Ls =", paste(m_set, collapse = ", "), "\n")
 
 # Import observed data ----------------------------------------------------
 
-# from alpha = 3.395; expected value of pi_branch = 0.7258, therefore
+# from alpha = 2.88; expected value of pi_branch = 0.7865, therefore
 
-# theta_hat set above from THETA_HAT (default 0.033)
+# theta_hat set above from THETA_HAT (default 0.031)
 
 # Scale trees to gene length (m) ------------------------------------------
 # only use 500K trees
 
-file_out_name = paste0(outdir_dat, "/expanding_sim_260_alpha3.395_ntree_500000.csv")
+file_out_name = paste0(outdir_dat, "/expanding_sim_260_alpha2.88_ntree_500000.csv")
 res_unique <- fread(file_out_name, fill = TRUE,
                     select = c("tree_id", "freq", "subtree_br_len"))[!is.na(tree_id)]
 res_unique[, tree_id := NULL]
@@ -54,18 +54,14 @@ res_unique[, pi_exp_base := subtree_br_len * pi_theta]
 
 n_k <- max(res_unique$freq)
 
-# cluster started once and reused across all m in this task
-cl <- makeCluster(n_cores)
-on.exit(stopCluster(cl), add = TRUE)
-
 # Loop over the gene lengths assigned to this task ------------------------
 
-for (m_target in m_set) {
+for (Ls_target in m_set) {
 
-cat("\n==== m =", m_target, "====\n")
+cat("\n==== m =", Ls_target, "====\n")
 start.time <- Sys.time()
 
-res_unique[, pi_exp_segsites := pi_exp_base * m_target]
+res_unique[, pi_exp_segsites := pi_exp_base * Ls_target]
 
 # Then using this expectation we generate the probability of actually
 # observing 0, 1, 2....etc segregating sites using the Poisson distribution.
@@ -101,9 +97,7 @@ chunk    <- 2e5
 starts   <- seq(1, nrow(res_unique), by = chunk)
 idx_list <- lapply(starts, function(s) s:min(s + chunk - 1, nrow(res_unique)))
 
-clusterExport(cl, c("res_unique", "site_rng", "n_k", "n_s", "accumulate_chunk"),
-              envir = environment())
-acc <- Reduce(`+`, parLapply(cl, idx_list, accumulate_chunk))
+acc <- Reduce(`+`, mclapply(idx_list, accumulate_chunk, mc.cores = n_cores))
 
 print(Sys.time() - start.time)
 
@@ -128,14 +122,14 @@ cat(sprintf("max lambda = %.2f, max site_rng = %d, tail mass = %.3g\n",
                   lower.tail = FALSE)))
 
 prob_pi[, row_total := NULL]
-fwrite(prob_pi, file.path(outdir, sprintf("prob_pi_norm_m%d.csv", m_target)))
+fwrite(prob_pi, file.path(outdir, sprintf("prob_pi_norm_m%d.csv", Ls_target)))
 
 pi_prod_lng <- melt(prob_pi, id.vars = "freq",
                     variable.name = "seg_sites", value.name = "p")
 pi_prod_lng[, seg_sites := as.integer(gsub("s_", "", seg_sites))]
 setorder(pi_prod_lng, freq, seg_sites)
 pi_prod_lng[, cdf := cumsum(p), by = freq]
-fwrite(pi_prod_lng, file.path(outdir, sprintf("pi_prod_lng_m%d.csv", m_target)))
+fwrite(pi_prod_lng, file.path(outdir, sprintf("pi_prod_lng_m%d.csv", Ls_target)))
 
 ## Quantiles. NOTE: which.max(cdf >= q) returns 1 when the condition is never
 ## met, silently giving the smallest seg_sites instead of flagging the problem.
@@ -152,15 +146,15 @@ pi_ci_bounds <- pi_prod_lng[, .(
   iqr      = first_at(seg_sites, cdf, 0.750) - first_at(seg_sites, cdf, 0.250)
 ), by = freq]
 pi_ci_bounds[, s_set := "pi"]
-pi_ci_bounds[, m := m_target]
+pi_ci_bounds[, m := Ls_target]
 
 if (anyNA(pi_ci_bounds))
   warning(sprintf("m = %d: some quantiles unreachable -- site_rng too narrow for large k.",
-                  m_target))
+                  Ls_target))
 
 # Outlier detections: summarise the neutral distribution per frequency --------
 
-fwrite(pi_ci_bounds, file.path(outdir, sprintf("ci_summary_m%d.csv", m_target)))
+fwrite(pi_ci_bounds, file.path(outdir, sprintf("ci_summary_m%d.csv", Ls_target)))
 
 rm(acc, prob_pi, pi_prod_lng, pi_ci_bounds); gc()
 

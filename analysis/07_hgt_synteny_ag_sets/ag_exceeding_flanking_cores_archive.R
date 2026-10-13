@@ -9,8 +9,10 @@ full_anno <- unique(fread(paste0(outdir_dat, "/all_pirate_anno_full.csv"),
 core_genes <- full_anno[!grepl(":", anchor)]
 
 # get core pis
-core_piS <- fread(paste0(outdir_dat, "/core_age_S_dt.csv"),
+core_piS <- fread(paste0(outdir_dat, "/core_theta_dt.csv"),
                        select = c("gene_family", "pi_s"))
+
+core_piS <- core_piS[, .(pi_s = mean(pi_s)), gene_family]
 
 # add to main dt
 core_genes <- merge(core_genes, core_piS,
@@ -57,7 +59,8 @@ delta = ag_long[,.(
   core_pi_s = mean(core_pi_s)
 ), gene_family][, delta := pi_s - core_pi_s]
 
-
+hist(delta$delta, breaks = 100, col = "dodgerblue3", border = "dodgerblue4")
+hist(abs(delta$delta), breaks = 100, col = "dodgerblue3", border = "dodgerblue4")
 
 # Get GC content ----------------------------------------------------------
 # get locations
@@ -260,8 +263,8 @@ legend("topleft",
 # how does this affect our project outliers?
 selected_ags <- fread(paste0(outdir_dat, "/gene_pvals_fdr.csv"))[p_bh <= 0.05]$gene_family
 sel_cands_dt <- fread(paste0(outdir_dat, "/gene_pvals_fdr.csv"))
-sel_cands_dt[, sel := fcase(seg_s_sites>expected_S & p_bh <=0.05, "bal",
-                            seg_s_sites < expected_S & p_bh <=0.05, "dir",
+sel_cands_dt[, sel := fcase(seg_sites>expected_S & p_bh <=0.05, "bal",
+                            seg_sites < expected_S & p_bh <=0.05, "dir",
                             default = "unsel")]
 sel_cands_dt <- sel_cands_dt[,.(gene_family, sel)]
 sel_cands_dt <- merge(sel_cands_dt, family_2d[,.(gene_family, hgt_class)],

@@ -3,7 +3,15 @@ library(data.table)
 
 # Subtree tip count (k) and summed subtree branch length, per internal node.
 # Only want AGs, so the root is dropped, so k is always < n_genomes.
-# Set include_tips = TRUE if you also want k = 1.
+# Set include_tips = TRUE if you also want k = 1 (pendant branches).
+
+# --- Slurm setup ----------------------------------------------------------
+ncpu <- as.integer(Sys.getenv("SLURM_CPUS_PER_TASK", "1"))
+setDTthreads(ncpu)
+
+outdir_dat <- Sys.getenv("OUTDIR_DAT", ".")
+dir.create(outdir_dat, recursive = TRUE, showWarnings = FALSE)
+
 
 analyse_pi_desc_subtrees <- function(tree, n_genomes, include_tips = FALSE) {
 
@@ -66,14 +74,15 @@ tot_pangenome_size <- 260
 n_sim_trees        <- 500000
 file_out_name      <- file.path(outdir_dat, "neutral_sim_260_ntree_500K.csv")
 
-start.time <- Sys.time()
 simulate_freq_vs_diversity_disk(n_genomes  = tot_pangenome_size,
                                 n_trees    = n_sim_trees,
                                 out_file   = file_out_name,
                                 chunk_size = 10000)
-Sys.time() - start.time
 
 # Normalise by the mean subtree length within each k class.
-res <- fread(file_out_name)           
-res[, t_hat := subtree_br_len / mean(subtree_br_len), by = freq]
-fwrite(res, file_out_name)
+if (Sys.getenv("DO_THAT", "1") == "1") {                   # now
+  res <- fread(file_out_name)
+  res[, t_hat := subtree_br_len / mean(subtree_br_len), by = freq]
+  fwrite(res, file_out_name)
+  cat("t_hat written\n")
+}

@@ -4,7 +4,7 @@
 msu_paths_dt <- fread(paste0(outdir_dat, "/msu_paths_dt.csv"))
 path_dt <- fread(paste0(outdir_dat, "/path_dt.csv"))
 
-pan_anno <- fread(paste0(outdir_dat, "/pangenome_anno.csv"))
+pan_anno <- fread(paste0(outdir_dat, "/pangenome_anno.csv"))[max_dose <=1]
 nodes_dt <- fread(paste0(outdir_dat, "/nodes_dt.csv"))
 msu_mergers_dt <- fread(paste0(outdir_dat, "msu_mergers_dt.csv")) # core block ids
 

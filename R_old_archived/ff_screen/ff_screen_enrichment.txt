@@ -1,0 +1,93 @@
+Families in test_results: 3478 
+Families with any ff flag: 150 
+Flagged families not found in ag_fus_alns: 0 
+Sequences unmatched to anno: 0 
+
+Sequence status counts (by ff_flag):
+          status ff_flag      N
+          <char>  <lgcl>  <int>
+1:         clean   FALSE 102497
+2:         clean    TRUE     92
+3: internal_stop    TRUE    276
+4:   length_long   FALSE    362
+5:   length_long    TRUE      1
+6:  length_short   FALSE    676
+7:  length_short    TRUE      3
+
+Private sites by codon position, ff vs other:
+   ff_flag    p1    p2    p3
+    <lgcl> <num> <num> <num>
+1:   FALSE  6500  4842 17344
+2:    TRUE   812   676  1000
+
+== m1: seg_sites ~ has_ff ==
+                   Estimate Std. Error    t value      Pr(>|t|)
+(Intercept)      -7.5705208 0.32203593 -23.508311 1.576065e-113
+has_ffTRUE       -0.1568626 0.07939106  -1.975822  4.825391e-02
+log(freq)         0.4732097 0.01604485  29.492932 8.241109e-171
+log(gene_length)  1.2219289 0.04416774  27.665643 1.988192e-152
+
+== m2: seg_sites ~ has_prob_ff ==
+                   Estimate Std. Error    t value      Pr(>|t|)
+(Intercept)      -7.4928640 0.31982126 -23.428286 7.995745e-113
+has_prob_ffTRUE  -0.1009082 0.08716775  -1.157632  2.470938e-01
+log(freq)         0.4678934 0.01590610  29.415965 5.066412e-170
+log(gene_length)  1.2117860 0.04389842  27.604319 7.991075e-152
+
+== m3: seg_sites ~ n_ff_genomes ==
+                    Estimate Std. Error    t value      Pr(>|t|)
+(Intercept)      -7.50117553 0.31830672 -23.565872 4.888661e-114
+n_ff_genomes     -0.02627131 0.01737323  -1.512172  1.305810e-01
+log(freq)         0.46821859 0.01558460  30.043667 1.724727e-176
+log(gene_length)  1.21271417 0.04372045  27.737918 3.848923e-153
+
+== Significance (p_bh < 0.05) by has_ff ==
+       sig
+has_ff  FALSE TRUE
+  FALSE  2398  930
+  TRUE     92   58
+
+	Fisher's Exact Test for Count Data
+
+data:  tb
+p-value = 0.005426
+alternative hypothesis: true odds ratio is not equal to 1
+95 percent confidence interval:
+ 1.139054 2.303567
+sample estimates:
+odds ratio 
+  1.625325 
+
+
+== Significance by has_prob_ff ==
+           sig
+has_prob_ff FALSE TRUE
+      FALSE  2420  946
+      TRUE     70   42
+
+	Fisher's Exact Test for Count Data
+
+data:  tb2
+p-value = 0.03325
+alternative hypothesis: true odds ratio is not equal to 1
+95 percent confidence interval:
+ 1.013266 2.300101
+sample estimates:
+odds ratio 
+  1.534679 
+
+
+== Sentinel g000145 ==
+   gene_family n_seq aligned  n_ff n_ff_colon n_ff_semi n_problem n_problem_ff n_problem_noff n_frame_broken n_internal_stop
+        <char> <int>  <lgcl> <int>      <int>     <int>     <int>        <int>          <int>          <int>           <int>
+1:     g000145   251    TRUE     3          3         0         3            2              1              0               2
+   n_length_long n_length_short n_priv_outlier n_priv_out_ff priv_ff priv_other p3frac_ff p3frac_other median_len
+           <int>          <int>          <int>         <int>   <num>      <num>     <num>        <num>      <num>
+1:             0              1              3             1      61         99 0.3278689    0.3535354       1698
+                header ff_flag        status ungap_len len_ratio int_stop_aln priv_p1 priv_p2 priv_p3
+                <char>  <lgcl>        <char>     <int>     <num>        <int>   <num>   <num>   <num>
+1: SPARK_1294_C1_01871   FALSE         clean      1698 1.0000000            0       9       5       7
+2: SPARK_1865_C1_01897    TRUE internal_stop      1698 1.0000000            1       2       0       0
+3: SPARK_2383_C1_01922    TRUE internal_stop      1644 0.9681979            1       1       0       1
+4: SPARK_2540_C1_01836    TRUE         clean      1653 0.9734982            0      21      17      19
+5:  SPARK_355_C1_01865   FALSE  length_short       834 0.4911661            0       7       3      10

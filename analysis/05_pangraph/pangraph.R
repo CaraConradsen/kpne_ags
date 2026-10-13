@@ -2,7 +2,7 @@
 # get minimal syntenic units
 
 # Retain only correct oriented chromosomes --------------------------------
-pan_anno <- fread(paste0(outdir_dat, "/pangenome_anno.csv"))
+pan_anno <- fread(paste0(outdir_dat, "/pangenome_anno.csv"))[max_dose <=1]
 
 geno_list = unique(pan_anno[,geno_id])
 

@@ -1,8 +1,8 @@
 # pi outliers
 piS_3IQR_outliers <- fread(paste0(outdir_dat, "/piS_3IQR_outliers.csv"))
 
-# id set 2 outliers
-set_1_ags <- fread(paste0(outdir_dat, "/phylo_info.csv"))[syn_jun == 1, gene_family]
+# id set 1 outliers
+set_1_ags = fread(paste0(outdir_dat, "/set_1_names.csv"))$gene_family
 
 pre_filter_ags <- fread(paste0(outdir_dat, "/pre_filter_ags.csv"))
 
@@ -14,8 +14,8 @@ pre_filter_ags$set = "All"
 pre_filter_ags[gene_family %chin% piS_3IQR_outliers$gene_family, set:= "pi_out"]
 pre_filter_ags[set!= "pi_out" & gene_family %chin% set_1_ags, set:= "set_1"]
 
-pre_filter_ags[, bin := cut(number_genomes,
-                       breaks = seq(min(number_genomes), max(number_genomes) + 3, by = 3),
+pre_filter_ags[, bin := cut(freq,
+                       breaks = seq(min(freq), max(freq) + 3, by = 3),
                        right = FALSE)]
 
 pre_filter_ags <- pre_filter_ags[,.(n = .N), by = c("set", "bin")]

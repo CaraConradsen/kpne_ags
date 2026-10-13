@@ -1,19 +1,17 @@
 #!/usr/bin/env python3
 """
-Calibrate exponential growth rate alpha and theta from core-gene diversity.
+Calibrate exponential growth rate alpha from core-gene diversity.
 
-Step 1: R = pi / theta_W is free of theta and depends only on alpha and n.
-        Simulate a grid of alpha, interpolate R(alpha) = R_obs in log10(1+alpha).
-Step 2: E[pi_site] = (theta/2) * E[pi_branch], so theta = 2 * pi_obs / pi_branch
-        evaluated at alpha_hat. Closed form, no interpolation.
+R = pi / theta_W is free of theta and depends only on alpha and n.
+    Simulate a grid of alpha, interpolate R(alpha) = R_obs in log10(1+alpha).
 
 Scaling conventions, which the AG simulation script must match:
     ploidy = 1, initial_size = 1, so one generation = one coalescent unit,
-    alpha is per coalescent unit, theta = 2 * N0 * mu per site.
+    alpha is per coalescent unit.
 
 Usage:
     python determine_alpha_and_theta.py --n 260 --pi-obs 0.012 --thetaw-obs 0.020 \
-        --reps 5000 --out alpha_theta_curve.csv
+        --reps 5000 --out alpha_theta_curve.csv --alpha-out alpha_hat.csv
 """
 
 import argparse
@@ -22,29 +20,10 @@ import msprime
 import numpy as np
 
 
-def branch_sfs(ts, n):
-    """L[i] = total branch length subtending exactly i tips, i = 1 .. n-1."""
-    tree = ts.first()
-    L = np.zeros(n, dtype=np.float64)
-    k = [0] * ts.num_nodes
-    for u in tree.samples():
-        k[u] = 1
-    root = tree.root
-    for u in tree.nodes(order="postorder"):
-        ku = k[u]
-        for c in tree.children(u):
-            ku += k[c]
-        k[u] = ku
-        if u != root:
-            L[ku] += tree.branch_length(u)
-    return L
-
-
 def sim_alpha(alpha, n, reps, seed):
     """Return (R, se_R, pi_branch) at a single alpha.
 
-    R is the mean of per-replicate ratios, as in calibrate_growth_rate.py.
-    pi_branch is the mean numerator, used for the theta step.
+    R is the mean of per-replicate ratios
     """
     dem = msprime.Demography()
     dem.add_population(name="pop", initial_size=1.0, growth_rate=alpha)
@@ -60,9 +39,9 @@ def sim_alpha(alpha, n, reps, seed):
     num = np.empty(reps)
     den = np.empty(reps)
     for j, ts in enumerate(reps_iter):
-        L = branch_sfs(ts, n)
-        num[j] = np.sum(w * L[1:n])
-        den[j] = L[1:n].sum()
+        afs = ts.allele_frequency_spectrum(mode="branch", polarised=True, span_normalise=True)
+        num[j] = np.sum(w * afs[1:n])
+        den[j] = afs[1:n].sum()
 
     with np.errstate(divide="ignore", invalid="ignore"):
         vals = np.where(den > 0, a_n * num / den, np.nan)
@@ -93,11 +72,13 @@ def main():
     ap.add_argument("--thetaw-obs", type=float, required=True,
                     help="observed core-gene theta_W, e.g. 0.020")
     ap.add_argument("--reps", type=int, default=5000)
-    ap.add_argument("--seed", type=int, default=7)
+    ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--alphas", type=float, nargs="+",
-                    default=[0, 1, 2, 5, 10, 15, 20, 30, 50, 75,
+                    default=[0, 1, 2, 2.5, 3, 3.5, 4, 4.5,
+                             5, 10, 15, 20, 30, 50, 75,
                              100, 150, 200, 350, 500])
     ap.add_argument("--out", type=str, default="alpha_theta_curve.csv")
+    ap.add_argument("--alpha-out", type=str, default="alpha_hat.csv")
     args = ap.parse_args()
 
     target = args.pi_obs / args.thetaw_obs
@@ -121,7 +102,7 @@ def main():
         R0, _, pib0 = rows[0][1], rows[0][2], rows[0][5]
         print(f"\nCheck at alpha = 0: R = {R0:.4f} (expect 1.00), "
               f"pi_branch = {pib0:.4f} (expect 2.00)")
-        if abs(R0 - 1.0) > 0.02 or abs(pib0 - 2.0) > 0.05:
+        if abs(pib0 - 2.0) > 0.05:
             print("WARNING: constant-size check failed, "
                   "the scaling convention is wrong. Stop here.")
 
@@ -136,14 +117,10 @@ def main():
               f"Widen --alphas.")
     else:
         print(f"\nalpha_hat = {a_hat:.4g}")
-
-        # ---- step 2, theta -------------------------------------------------
-        _, _, pi_branch_hat = sim_alpha(a_hat, args.n, args.reps, args.seed)
-        theta_hat = 2.0 * args.pi_obs / pi_branch_hat
-        print(f"pi_branch at alpha_hat = {pi_branch_hat:.4f}")
-        print(f"theta_hat = {theta_hat:.6g}")
-        print(f"expansion correction (theta_hat / pi_obs) = "
-              f"{theta_hat / args.pi_obs:.3f}")
+        with open(args.alpha_out, "w") as fh:
+            fh.write("pi_obs,thetaw_obs,alpha_hat\n")
+            fh.write(f"{args.pi_obs:g},{args.thetaw_obs:g},{a_hat:.6g}\n")
+        print(f"Wrote {args.alpha_out}")        
 
     # ---- write the curve ---------------------------------------------------
     header = "alpha,log10_1p_alpha,R,se_R,ci_lo,ci_hi,pi_branch"

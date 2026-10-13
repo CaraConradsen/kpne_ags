@@ -3,51 +3,22 @@
 # input require data sets
 # ags
 
-pangraph_anno <- fread(paste0(outdir_dat, "/all_pirate_anno_full.csv"), 
-                       select = c("geno_id", "gene_family", "locus_tag", "fus_locus_tag", 
-                                  "number_genomes", "start","end", "average_dose",
-                                  "strand","ST","ag_type"))
+pangraph_anno <- unique(fread(paste0(outdir_dat, "/all_pirate_anno_full.csv"), 
+                              select = c("geno_id", "gene_family", "locus_tag", "fus_locus_tag", 
+                                         "freq", "start","end", "max_dose",
+                                         "strand","ST","ag_type")))
 
 
 # remove estimates of core, paralogs and singletons
-pangraph_anno <- pangraph_anno[ag_type!="core"][number_genomes > 1][average_dose <= 1]
+pangraph_anno <- pangraph_anno[ag_type!="core"][freq > 1][max_dose <= 1]
 
 # number of genomes in pangenome
 tot_pangenome_size = length(unique(pangraph_anno$geno_id))
 
 list_unique_ags = unique(pangraph_anno$gene_family)
 
-# fission/fusion list -----------------------------------------------------
-
-pangraph_anno[, n:=.N, by = c("gene_family", "geno_id")]
-
-# Filter rows where n > 1
-multi_loci <- pangraph_anno[n > 1]
-
-# Group by gene_family and geno_id, collect locus_tags
-f_loci <- multi_loci[, .(locus_tags = list(locus_tag)), by = .(gene_family, geno_id)]
-
-# Now collapse by gene_family into a list of lists
-f_loci <- f_loci[, .(loci_per_geno = list(locus_tags)), by = gene_family]
-
-# Convert to named list
-gene_family_list <- setNames(f_loci$loci_per_geno, f_loci$gene_family)
-
-
-# Alignment loop ----------------------------------------------------------
-
-# function to collapse fission/fusion loci
-collapse_alignment <- function(dna) {
-  
-  mat <- as.matrix(dna)
-  
-  merged <- apply(mat, 2, function(col) {
-    bases <- col[col != "-"]
-    if (length(bases) == 0) "-" else bases[1]
-  })
-  
-  DNAString(paste0(merged, collapse = ""))
-}
+# one locus per genome per family after fission/fusion removal
+stopifnot(pangraph_anno[, .N, by = .(gene_family, geno_id)][, all(N == 1)])
 
 # set up directories
 
@@ -69,19 +40,8 @@ for (i in list_unique_ags) {
   
   sampled_loci <- pangraph_anno[gene_family == i, locus_tag]
   temp_string  <- temp_string[names(temp_string) %in% sampled_loci]
-  
-  if (length(gene_family_list[[i]]) >= 1) {
-    normies <- temp_string[!names(temp_string) %in% unlist(gene_family_list[[i]])]
-    collapsed_loc <- lapply(gene_family_list[[i]], function(fus_loc) {
-      collapse_alignment(temp_string[names(temp_string) %in% fus_loc])
-    })
-    collapsed_loc     <- DNAStringSet(unlist(collapsed_loc))
-    collapsed_loc_tag <- sapply(gene_family_list[[i]], `[`, 1)
-    collapsed_loc     <- DNAStringSet(setNames(collapsed_loc, collapsed_loc_tag))
-    temp_string       <- c(normies, DNAStringSet(collapsed_loc))
-  }
-  
-  if (length(temp_string) == 0) next
+
+  if (length(temp_string) < 2) next
   if (length(temp_string) %in% c(1, tot_pangenome_size)) next
   
   writeXStringSet(temp_string,
@@ -221,10 +181,18 @@ summarise_genes <- function(sites_dt, min_sites = 2) {
 
 ag_theta_dt <- summarise_genes(sites_combined_dt)
 
+# OLD
+# combined_pi_dt <- ag_theta_dt[, .(
+#   pi_s     = mean(pi_s),
+#   gene_length = mean(gene_length),
+#   seg_sites = as.integer(mean(seg_s_sites))
+# ), by = gene_family]
+
 combined_pi_dt <- ag_theta_dt[, .(
-  pi_s     = mean(pi_s),
-  gene_length = mean(gene_length),
-  seg_sites = as.integer(mean(seg_s_sites))
+  pi_s        = mean(pi_s),
+  gene_length = gene_length[1],
+  syn_sites   = sum(Ls),            # 4-fold + 2-fold sites assayed
+  seg_sites   = sum(seg_s_sites)    # total synonymous segregating sites
 ), by = gene_family]
 
 IQR_threshold = median(combined_pi_dt$pi_s) + 3*IQR(combined_pi_dt$pi_s)
@@ -235,10 +203,8 @@ fwrite(combined_pi_dt[pi_s > IQR_threshold, .(gene_family)],
 
 # add back freq
 combined_pi_dt <- merge(combined_pi_dt,
-                        unique(pangraph_anno[,.(gene_family,number_genomes)]),
+                        unique(pangraph_anno[,.(gene_family,freq)]),
                         all.x = TRUE, by = "gene_family")
-
-setnames(combined_pi_dt, "number_genomes", "freq")
 
 
 fwrite(combined_pi_dt, paste0(outdir_dat, "/ag_age_S_dt.csv"))
@@ -261,7 +227,7 @@ segments(IQR_threshold,0,
          lwd = 1.1, lty = 3,
          IQR_threshold, 2000,
          col = "blue")
-text(IQR_threshold, 1500, "median + 3*IQR: 0.10",
+text(IQR_threshold, 1500, paste0("median + 3*IQR: ", round(IQR_threshold, digits = 2)),
      col = "blue", pos = 4)
 
 axis(side = 2, at = seq(0,3000, 500),

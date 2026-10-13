@@ -69,7 +69,7 @@ focal_genome_names = unique(pirate_anno$geno_id)
 pirate_lng <- fread("./input_data/PIRATE_260_hybrid_chr_hps0.6_out/PIRATE.gene_families.ordered.tsv",
                 select = c("gene_family", "consensus_gene_name",
                            "consensus_product", "number_genomes", 
-                           "threshold", "alleles_at_maximum_threshold", "average_dose",
+                           "threshold", "alleles_at_maximum_threshold", "average_dose", "max_dose",
                            "cluster", "cluster_order", focal_genome_names))
 
 pirate_lng <- melt(pirate_lng, 
@@ -77,7 +77,7 @@ pirate_lng <- melt(pirate_lng,
                                "consensus_gene_name",
                                "consensus_product",
                                "threshold", "alleles_at_maximum_threshold",
-                               "average_dose",
+                               "average_dose", "max_dose",
                                "cluster", "cluster_order"),
                    variable.name = "geno_id", 
                    value.name = "fus_locus_tag"
@@ -123,6 +123,18 @@ pirate_anno <- merge(pirate_anno, collapsed,
                      all.x = TRUE, by = c("fus_locus_tag"))
 
 
+# flag fission/fusion alleles ---------------------------------------------
+fwrite(pirate_anno, paste0(outdir_dat, "/all_pirate_anno_full_intact_fis_fus.csv"))
+
+# remove fis/fuse alleles
+pirate_anno <- pirate_anno[!grepl("[()]", fus_locus_tag)]
+
+pirate_anno[, freq := uniqueN(geno_id), by = gene_family]
+
+# sanity checks
+pirate_anno[, .(n_fam_changed = uniqueN(gene_family[freq != number_genomes]),
+                any_increase  = any(freq > number_genomes))]
+
 # Add ST ------------------------------------------------------------------
 ST_info <- fread("C:/Users/carac/Dropbox/Vos_Lab/SpARK data/spark_metadata.csv", 
                  select = c("id", "ST"))
@@ -167,9 +179,9 @@ pirate_anno <- merge(pirate_anno, eggnog[,.(gene_family, egng_cog )],
 n_genomes = length(unique(pirate_anno[, geno_id]))
 
 
-pirate_anno[, ag_type := fcase(number_genomes < 0.99 * n_genomes & number_genomes >=  0.95 * n_genomes, "soft",
-                               number_genomes < 0.95 * n_genomes & number_genomes >=  0.15 * n_genomes, "shell",
-                               number_genomes < 0.15 * n_genomes, "cloud",
+pirate_anno[, ag_type := fcase(freq < 0.99 * n_genomes & freq >=  0.95 * n_genomes, "soft",
+                               freq < 0.95 * n_genomes & freq >=  0.15 * n_genomes, "shell",
+                               freq < 0.15 * n_genomes, "cloud",
                                default = "core")]
 
 
@@ -448,10 +460,10 @@ fwrite(pirate_anno, paste0(outdir_dat, "/all_pirate_anno_cogs.csv"))
 # need to account for fusion loci on different strands
 
 pan_anno <- unique(pirate_anno[,.(gene_family,geno_id,ag_type, fus_locus_tag, 
-                                  number_genomes, consensus_product,
-                                  fstart, fend, fstrand, ST, tot_len)])
+                                  freq, number_genomes, consensus_product,
+                                  fstart, fend, fstrand, ST, tot_len, max_dose)])
 
-colnames(pan_anno)[7:9] <- c("start","end","strand")
+setnames(pan_anno, c("fstart","fend","fstrand"), c("start","end","strand"))
 
 
 fwrite(pan_anno, paste0(outdir_dat, "/pangenome_anno.csv"))

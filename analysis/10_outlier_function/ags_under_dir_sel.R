@@ -5,8 +5,18 @@ anno <- unique(fread(paste0(outdir_dat, "/all_pirate_anno_full.csv"),
                           select = c("fus_locus_tag","geno_id", "gene_family", "ST", "threshold", 
                                      "number_genomes", "consensus_gene_name","consensus_product",
                                      "alleles_at_maximum_threshold")))
-anno <- anno[gene_family %chin% c("g000371", "g000222", "g001303", "g001257", 
-                                  "g000145", "g001254", "g003299", "g004223")]
+# anno <- anno[gene_family %chin% c(#"g000371", "g000222", "g001303", "g001257", 
+#                                   #"g000145", "g001254", "g003299", "g004223", 
+#                                   # new fellas 
+#                                   "g001247","g004140","g004984", "g003175", "g000242_2","g002556")]
+
+anno <- anno[gene_family %chin% c("g000145", "g002611", "g004058",#Outer membrane 
+                                  "g000322", "g001147", "g004051", "g003783", "g000817",#5 co-inherited, O-antigen is textbook NFDS
+                                  "g002097",#interbacterial competition
+                                  "g000382","g000849_1", # Efflux and envelope stress, adaptive variation in efflux capacity 
+                                  "g003299","g001247"
+)]
+
 
 unique(anno[,.(gene_family, number_genomes, consensus_gene_name, consensus_product, alleles_at_maximum_threshold)])
 #     gene_family number_genomes consensus_gene_name                                                              consensus_product alleles_at_maximum_threshold
@@ -46,8 +56,16 @@ anno <- unique(fread(paste0(outdir_dat, "/all_pirate_anno_full.csv"),
                                 "number_genomes", "consensus_gene_name","consensus_product",
                                 "seqnames", "fstart",  "fend", "fstrand",
                                 "alleles_at_maximum_threshold")))
-anno <- anno[gene_family %chin% c("g000371", "g000222", "g001303", "g001257", 
-                                  "g000145", "g001254", "g003299", "g004223")]
+anno <- anno[gene_family %chin% c("g000145", "g002611", "g004058",#Outer membrane 
+                                  "g000322", "g001147", "g004051", "g003783", "g000817",#5 co-inherited, O-antigen is textbook NFDS
+                                  "g002097",#interbacterial competition
+                                  "g000382","g000849_1", # Efflux and envelope stress, adaptive variation in efflux capacity 
+                                  "g003299","g001247"
+)]
+  #              c(#"g000371", "g000222", "g001303", "g001257", 
+  # #"g000145", "g001254", "g003299", "g004223", 
+  # # new fellas 
+  # "g001247","g004140", "g004984", "g003175", "g000242_2", "g002556")]
 
 setnames(anno, c( "fstart",  "fend", "fstrand"),
          c( "start",  "end", "strand"))
@@ -180,17 +198,38 @@ collapse_st <- function(tab, min_n = 10, merge_lv = TRUE) {
 # are the right unit and nucleotide alleles inflate counts with synonymous variation.
 
 
-long_g000371 <- collapse_st(ag_st_allele_counts[["g000371"]], min_n = 2)
-long_g001257 <- collapse_st(ag_st_allele_counts[["g001257"]], min_n = 2)
-long_g001303 <- collapse_st(ag_st_allele_counts[["g001303"]], min_n = 2)
-long_g000222 <- collapse_st(ag_st_allele_counts[["g000222"]], min_n = 2)
-long_g000145 <- collapse_st(ag_st_allele_counts[["g000145"]], min_n = 2)
-long_g003299 <- collapse_st(ag_st_allele_counts[["g003299"]], min_n = 2)
-long_g001254 <- collapse_st(ag_st_allele_counts[["g001254"]], min_n = 2)
-long_g004223 <- collapse_st(ag_st_allele_counts[["g004223"]], min_n = 2)
+# long_g000371 <- collapse_st(ag_st_allele_counts[["g000371"]], min_n = 2)
+# long_g001257 <- collapse_st(ag_st_allele_counts[["g001257"]], min_n = 2)
+# long_g001303 <- collapse_st(ag_st_allele_counts[["g001303"]], min_n = 2)
+# long_g000222 <- collapse_st(ag_st_allele_counts[["g000222"]], min_n = 2)
+# long_g000145 <- collapse_st(ag_st_allele_counts[["g000145"]], min_n = 2)
+# long_g003299 <- collapse_st(ag_st_allele_counts[["g003299"]], min_n = 2)
+# long_g001254 <- collapse_st(ag_st_allele_counts[["g001254"]], min_n = 2)
+# long_g004223 <- collapse_st(ag_st_allele_counts[["g004223"]], min_n = 2)
 
 
+# # new fellas
+# long_g001247 <- collapse_st(ag_st_allele_counts[["g001247"]], min_n = 2)
+# long_g004140 <- collapse_st(ag_st_allele_counts[["g004140"]], min_n = 2)
+# long_g004984 <- collapse_st(ag_st_allele_counts[["g004984"]], min_n = 2)
+# long_g003175 <- collapse_st(ag_st_allele_counts[["g003175"]], min_n = 2)
+# long_g000242_2 <- collapse_st(ag_st_allele_counts[["g000242_2"]], min_n = 2)
+# long_g002556 <- collapse_st(ag_st_allele_counts[["g002556"]], min_n = 2)
 
+long_g000145  <- collapse_st(ag_st_allele_counts[["g000145"]], min_n = 2)  
+long_g002611 <- collapse_st(ag_st_allele_counts[["g002611"]], min_n = 2)  
+long_g004058 <- collapse_st(ag_st_allele_counts[["g004058"]], min_n = 2)  
+long_g000322 <- collapse_st(ag_st_allele_counts[["g000322"]], min_n = 2)  
+long_g001147 <- collapse_st(ag_st_allele_counts[["g001147"]], min_n = 2)  
+long_g004051 <- collapse_st(ag_st_allele_counts[["g004051"]], min_n = 2)  
+long_g003783 <- collapse_st(ag_st_allele_counts[["g003783"]], min_n = 2)  
+long_g000817 <- collapse_st(ag_st_allele_counts[["g000817"]], min_n = 2)  
+long_g002097 <- collapse_st(ag_st_allele_counts[["g002097"]], min_n = 2)  
+long_g000382 <- collapse_st(ag_st_allele_counts[["g000382"]], min_n = 2)  
+long_g003299 <- collapse_st(ag_st_allele_counts[["g003299"]], min_n = 2)  
+long_g001247 <- collapse_st(ag_st_allele_counts[["g001247"]], min_n = 2)
+long_g000849_1<- collapse_st(ag_st_allele_counts[["g000849_1"]], min_n = 2)
+ 
 
 plot_panelA <- function(long, gname, focal = "ST307", seedy = 21) {
   M <- as.matrix(dcast(long, allele_name ~ ST_grp, value.var = "n", fill = 0),
@@ -254,22 +293,46 @@ plot_panelA <- function(long, gname, focal = "ST307", seedy = 21) {
   #       3, line = 1.5, adj = -0.1, cex = 0.75)
 }
 
-png(paste0(outdir_fig,"/outlier_alleles_freqs_2.png"),
-    width = 23.85, height = 41.5, units = "cm", res = 300,
-    pointsize = 12, type = "cairo")
+# png(paste0(outdir_fig,"/outlier_alleles_freqs_2.png"),
+#     width = 23.85, height = 41.5, units = "cm", res = 300,
+#     pointsize = 12, type = "cairo")
+# 
+# par(mfrow = c(8,1))
+# plot_panelA(long_g003299, "AbiEi, Phage defence antitoxin")
+# plot_panelA(long_g001254, "AbiEii/AbiGii, Phage defence toxin")
+# plot_panelA(long_g000371, "kexD, Antibiotic efflux pump")
+# plot_panelA(long_g001257, "ramR, Efflux pump switch")
+# plot_panelA(long_g001303, "acrA, Antibiotic efflux pump")
+# plot_panelA(long_g000222, "acrB, Antibiotic efflux pump")
+# plot_panelA(long_g000145, "ompA, Outer membrane porin")
+# plot_panelA(long_g004223, "tssF, Bacterial harpoon gun")
+# 
+# dev.off()
 
+# new fellas
+
+# plot_panelA(long_g001247, "dinD, DNA damage-inducible protein D")
+# plot_panelA(long_g004140, "zapA, Cell division protein ZapA")
+# plot_panelA(long_g004984, "tssM, Type VI secretion protein VasK")
+# plot_panelA(long_g003175, "GtrA-like protein")
+# plot_panelA(long_g000242_2, "tssJ, Type VI secretion system lipoprotein TssJ")
+# plot_panelA(long_g002556, "Asr, Acid resistance repetitive basic protein")
+
+# Interesting candidates
 par(mfrow = c(8,1))
-plot_panelA(long_g003299, "AbiEi, Phage defence antitoxin")
-plot_panelA(long_g001254, "AbiEii/AbiGii, Phage defence toxin")
-plot_panelA(long_g000371, "kexD, Antibiotic efflux pump")
-plot_panelA(long_g001257, "ramR, Efflux pump switch")
-plot_panelA(long_g001303, "acrA, Antibiotic efflux pump")
-plot_panelA(long_g000222, "acrB, Antibiotic efflux pump")
-plot_panelA(long_g000145, "ompA, Outer membrane porin")
-plot_panelA(long_g004223, "tssF, Bacterial harpoon gun")
-
-dev.off()
-
+plot_panelA(long_g000145,   "OmpA, Outer membrane porin")
+plot_panelA(long_g002611,   "OmpK36, Outer membrane porin")
+plot_panelA(long_g004058,   "OmpR, Porin expression regulator")
+plot_panelA(long_g000322,   "wbbM1, O-antigen glycosyltransferase")
+plot_panelA(long_g001147,   "rfbD, O-antigen sugar synthesis")
+plot_panelA(long_g004051,   "rfbA, O-antigen sugar synthesis")
+plot_panelA(long_g003783,   "rfbB, O-antigen sugar synthesis")
+plot_panelA(long_g000817,   "Glycosyltransferase, O-antigen assembly")
+plot_panelA(long_g002097,   "impA, Type VI secretion component")
+plot_panelA(long_g000382,   "acrA, Antibiotic efflux pump")
+plot_panelA(long_g000849_1, "baeS, Envelope stress sensor kinase")
+plot_panelA(long_g003299,   "AbiEi, Phage defence antitoxin")
+plot_panelA(long_g001247,   "dinD, DNA damage-inducible protein")
 
 # # balancing selection example
 # selected_ags <- fread(paste0(outdir_dat, "/gene_pvals_fdr.csv"))[p_bh <= 0.05 & expected_S < seg_s_sites]
