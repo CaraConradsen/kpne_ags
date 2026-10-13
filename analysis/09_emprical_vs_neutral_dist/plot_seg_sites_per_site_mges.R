@@ -101,14 +101,15 @@ trouble_children = data.table(gene_family = c("g000145", "g002611", "g004058",#O
 
 # Panel drawing -----------------------------------------------------------
 # Panels share both axes; only panel a carries tick labels and the axis title.
+# The legend is drawn once in the outer right margin, so no panel draws its own.
 
 draw_panel <- function(dt, xlim, ylim, panel_lab,
-                       show_y = TRUE, show_legend = TRUE) {
+                       show_y = TRUE) {
 
   pt_col <- adjustcolor(cols[as.character(dt$call)], alpha.f = 0.6)
 
   plot(dt$freq, dt$s_per_site, type = "n",
-       xlab = expression("Pangenome frequency ("*italic(k)*")"),
+       xlab = "",
        ylab = "", xaxt = "n", yaxt = "n",
        xlim = xlim, ylim = ylim)
 
@@ -117,7 +118,7 @@ draw_panel <- function(dt, xlim, ylim, panel_lab,
   if (show_y) {
     axis(side = 2, at = pretty(ylim), labels = pretty(ylim), las = 2)
     axis(side = 2, at = mean(ylim),
-         labels = "segregating sites per site",
+         labels = "",
          line = 2.5, tick = FALSE)
   } else {
     axis(side = 2, at = pretty(ylim), labels = FALSE)
@@ -146,16 +147,6 @@ draw_panel <- function(dt, xlim, ylim, panel_lab,
 
   mtext(bquote(rho == .(rho_val) * ";" ~ .(p_part)),
         side = 3, adj = 0.5, line = -2.0, cex = 0.7)
-
-  if (show_legend) {
-    legend("topright",
-           legend = c("High outlier (BH FDR < 0.05)",
-                      "Low outlier (BH FDR < 0.05)",
-                      "Non-significant"),
-           col = c(rgb(0.2, 0.6, 1, alpha = 1), "#F26C2A", "grey60"),
-           pch = c(16, 16, 16),
-           bty = "n", cex = 0.7)
-  }
 
   # ring and label the genes of interest
   tc <- merge(trouble_children,
@@ -190,20 +181,46 @@ xlim_shared <- range(dt_a$freq)
 ylim_shared <- range(dt_a$s_per_site)
 
 png(paste0(outdir_fig, "/outliers_seg_sites_per_site_mges.png"),
-    width = 18, height = 9, units = "cm", res = 300,
-    pointsize = 8, type = "cairo")
+    width = 23.4, height = 12, units = "cm", res = 600,
+    pointsize = 12, type = "cairo")
 
+# the right-hand oma reserves the strip the legend sits in
 par(mfrow = c(1, 2), family = "sans", bty = "o", tcl = -0.3,
-    mgp = c(2.2, 0.6, 0))
+    mgp = c(2.2, 0.6, 0), oma = c(1, 1, 0, 6.5))
 
-par(mar = c(4, 5, 2, 0.5))
+# outer axis titles centre on the two panels, not on the whole device,
+# so discount the oma strip given over to the legend
+din <- par("din"); omi <- par("omi")
+x_mid <- (omi[2] + (din[1] - omi[2] - omi[4]) / 2) / din[1]
+y_mid <- (omi[1] + (din[2] - omi[1] - omi[3]) / 2) / din[2]
+
+par(mar = c(2, 3, 2, 0.5))
 draw_panel(dt_a, xlim_shared, ylim_shared, panel_lab = "a",
-           show_y = TRUE, show_legend = TRUE)
+           show_y = TRUE)
+mtext("Segregating sites per site", side = 2, outer = TRUE, adj = y_mid)
 
-par(mar = c(4, 0.8, 2, 1.7))
+par(mar = c(2, 1.5, 2, 2))
 draw_panel(dt_b, xlim_shared, ylim_shared, panel_lab = "b",
-           show_y = FALSE, show_legend = FALSE)
+           show_y = FALSE)
+mtext(expression("Pangenome frequency ("*italic(k)*")"),
+      side = 1, outer = TRUE, adj = x_mid)
 
+# Legend, outer right -----------------------------------------------------
+# overlay a plot region spanning the whole device with the outer margins
+# zeroed, so the legend can be dropped into the strip reserved by oma above
+
+op <- par(no.readonly = TRUE)
+par(fig = c(0, 1, 0, 1), oma = c(0, 0, 0, 0), mar = c(0, 0, 0, 0), new = TRUE)
+plot(0, 0, type = "n", bty = "n", xaxt = "n", yaxt = "n", xlab = "", ylab = "")
+
+legend("right", inset = 0.005,
+       title = expression(bold("BH FDR < 0.05")), title.adj = 0,
+       legend = c("High outlier", "Low outlier", "Non-significant"),
+       col = c(rgb(0.2, 0.6, 1, alpha = 1), "#F26C2A", "grey60"),
+       pch = c(16, 16, 16),
+       bty = "n", cex = 0.7, y.intersp = 1.2, xpd = NA)
+
+par(op)
 par(mfrow = c(1, 1))
 dev.off()
 

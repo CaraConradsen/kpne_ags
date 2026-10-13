@@ -27,15 +27,15 @@ setorder(exp_curve, freq)
 # cex_pt <- 0.4 + 1.0 * (rank(gene_pvals$gene_length) / nrow(gene_pvals))
 
 # ---------------------------------------------------------------------------
-# png(paste0(outdir_fig,"/outliers_seg_sites_per_site.png"),
-#     width = 17, height = 13, units = "cm", res = 300,
-#     pointsize = 12, type = "cairo")
+png(paste0(outdir_fig,"/outliers_seg_sites_per_site.png"),
+    width = 17, height = 13, units = "cm", res = 300,
+    pointsize = 12, type = "cairo")
 
 par(mar = c(5, 5, 2, 1), bty = "o")
 
 plot(gene_pvals$freq, gene_pvals$s_per_site, type = "n",
      xlab = expression("Pangenome frequency ("*italic(k)*")"),
-     ylab = "", xaxt = "n", las = 2)
+     ylab = "", xaxt = "n", las = 2, ylim = c(0,0.6))
 
 axis(side = 2, at = max(gene_pvals$s_per_site)/2,
      labels = "segregating sites per site", 
@@ -196,7 +196,14 @@ fwrite(out,
 
 
 
+# every family whose name or product mentions ompR or envZ
+check <- unique(fread(paste0(outdir_dat, "/all_pirate_anno_full.csv"),
+                      select = c("gene_family", "freq", "max_dose", "ag_type",
+                                 "consensus_gene_name", "consensus_product")))
 
+check[grepl("ompR|envZ", consensus_gene_name, ignore.case = TRUE) |
+        grepl("ompR|envZ|osmolarity|EnvZ", consensus_product, ignore.case = TRUE)][
+          order(-freq)]
 
 
 
