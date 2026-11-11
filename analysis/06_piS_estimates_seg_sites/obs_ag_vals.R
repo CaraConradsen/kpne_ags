@@ -4,7 +4,7 @@
 # ags
 
 pangraph_anno <- unique(fread(paste0(outdir_dat, "/all_pirate_anno_full.csv"), 
-                              select = c("geno_id", "gene_family", "locus_tag", "fus_locus_tag", 
+                              select = c("geno_id", "gene_family", "locus_tag", 
                                          "freq", "start","end", "max_dose",
                                          "strand","ST","ag_type")))
 

@@ -10,9 +10,9 @@ suppressPackageStartupMessages({
 # of the sorted unique lengths.
 
 outdir_dat <- Sys.getenv("OUTDIR_DAT", unset = ".")
-theta_hat  <- as.numeric(Sys.getenv("THETA_HAT", unset = "0.0312"))
-per_task   <- as.integer(Sys.getenv("GENES_PER_TASK", unset = "7"))
-n_cores    <- as.integer(Sys.getenv("SLURM_CPUS_PER_TASK", unset = "7"))
+theta_hat  <- as.numeric(Sys.getenv("THETA_HAT", unset = "0.031"))
+per_task   <- as.integer(Sys.getenv("GENES_PER_TASK", unset = "10"))
+n_cores    <- as.integer(Sys.getenv("SLURM_CPUS_PER_TASK", unset = "8"))
 
 task <- as.integer(Sys.getenv("SLURM_ARRAY_TASK_ID", unset = NA))
 if (is.na(task)) stop("SLURM_ARRAY_TASK_ID not set")
@@ -39,7 +39,7 @@ cat("task", task, "| Ls =", paste(m_set, collapse = ", "), "\n")
 # Scale trees to gene length (m) ------------------------------------------
 # only use 500K trees
 
-file_out_name = paste0(outdir_dat, "/expanding_sim_260_alpha2.88_ntree_500000.csv")
+file_out_name = paste0(outdir_dat, "/expanding_sim_260_alpha2.89_ntree_500000.csv")
 res_unique <- fread(file_out_name, fill = TRUE,
                     select = c("tree_id", "freq", "subtree_br_len"))[!is.na(tree_id)]
 res_unique[, tree_id := NULL]

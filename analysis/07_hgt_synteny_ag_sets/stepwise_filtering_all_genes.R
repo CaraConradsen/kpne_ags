@@ -12,14 +12,13 @@ piS_3IQR_outliers <- fread(paste0(outdir_dat, "/piS_3IQR_outliers.csv"))
 ag_names <- fread(paste0(outdir_dat, "/ag_age_S_dt.csv"), 
                    select = c("gene_family"))$gene_family 
 
-syntenic_ags <- fread(paste0(outdir_dat, "/msu_regions_anchored.csv"),
-                             select = c("gene_family", "acrs_msu", "acrs_jun","msu"))
+# placed ags: at least one carrier locus at a core-block junction (Ai:Aj),
+# acrs_msu and acrs_jun default to 0 for ags never assigned to a junction
+placed_ags <- unique(fread(paste0(outdir_dat, "/all_pirate_anno_full.csv"), 
+                           select = c("gene_family", "anchor")))[grepl(":", anchor), unique(gene_family)]
 
-syntenic_ags <- syntenic_ags[gene_family %chin% ag_names][msu!=""]
-
-syntenic_ags <- unique(syntenic_ags)
-
-syntenic_ags <- syntenic_ags[acrs_msu!= 1][acrs_jun!=1]$gene_family
+syntenic_ags <- id_ags[gene_family %in% ag_names][acrs_msu == 0 & acrs_jun == 0 & 
+                                                    gene_family %chin% placed_ags, gene_family]
 
 # Step 1 — Total
 dt1 <- dt

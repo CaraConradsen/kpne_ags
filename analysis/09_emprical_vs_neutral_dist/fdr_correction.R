@@ -1,7 +1,7 @@
 
 # For Ls: import all the gene probability info, from hpc, previously separated --------
 
-ag_Ls_prob_files <- list.files(paste0(outdir_dat, "/prod_ag_Ls_2.92/"), 
+ag_Ls_prob_files <- list.files(paste0(outdir_dat, "/prod_ag_Ls_2.89/"), 
                                pattern = "^pi_prod_lng_m[0-9]+\\.csv$", 
                                full.names = TRUE)
 
@@ -28,6 +28,26 @@ ag_age_S_dt <- expected_by_freq[ag_age_S_dt, on = .(freq, syn_sites)]
 
 # left join: keep every gene, even if seg_sites is beyond the truncated range
 gene_pvals <- theta_prod_Ls_lng[ag_age_S_dt, on = .(freq, syn_sites, seg_sites)]
+
+
+# check missing -----------------------------------------------------------
+gene_pvals[is.na(p)]
+
+# coverage of the lookup, one row per (freq, syn_sites) cell
+coverage <- theta_prod_Ls_lng[, .(tab_min = min(seg_sites),
+                             tab_max = max(seg_sites)),
+                         by = .(freq, syn_sites)]
+
+miss <- gene_pvals[is.na(p), .(gene_family, freq, seg_sites, syn_sites)]
+check  <- merge(miss, coverage, by = c("freq", "syn_sites"), all.x = TRUE)
+
+check[, reason := fifelse(is.na(tab_max),    "no (freq, syn_sites) cell simulated",
+                        fifelse(seg_sites > tab_max, "seg_sites above tabulated max",
+                                fifelse(seg_sites < tab_min, "seg_sites below tabulated min",
+                                        "cell exists, value in range - join or type problem")))]
+check[, .N, by = reason][order(-N)]
+
+
 
 # p_two_sided = 2 * min(P(X <= obs), P(X >= obs))
 gene_pvals[, p_lower := cdf]

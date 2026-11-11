@@ -15,7 +15,7 @@ pre_filter_ags[gene_family %chin% piS_3IQR_outliers$gene_family, set:= "pi_out"]
 pre_filter_ags[set!= "pi_out" & gene_family %chin% set_1_ags, set:= "set_1"]
 
 pre_filter_ags[, bin := cut(freq,
-                       breaks = seq(min(freq), max(freq) + 3, by = 3),
+                       breaks = seq(min(freq), max(freq) + 4, by = 4),
                        right = FALSE)]
 
 pre_filter_ags <- pre_filter_ags[,.(n = .N), by = c("set", "bin")]
@@ -37,7 +37,7 @@ par(mar=c(4,3,1,0.5))
 
 bp <- barplot(
   pre_filter_ags_plot,
-  col = c("#243040", "#5C7086", "#C3CDE8"), # "#8FA0B3"
+  col = c("#0B3C49","#8E24AA","#E8A33D"), # "#8FA0B3"
   # for og
   # col = c(rgb(0.05, 0.05, 0.15),      # Very dark blue/navy (almost black)
   #         rgb(0.05, 0.4, 0.6),      # Stronger cyan-blue
@@ -53,8 +53,8 @@ bp <- barplot(
   xlab = ""
 )
 
-axis(side = 1, at = seq(0, max(bp) + 0.5, length.out = 7),
-labels = round(seq(0,257, length.out = 7), digits = 0))
+axis(side = 1, at = seq(0, max(bp) + 0.5, length.out = 5),
+labels = round(seq(0,257, length.out = 5), digits = 0))
 
 
 axis(side = 1, at = length(bp)/2, labels = expression("Pangenome frequency ("*italic(k)*")"), 
@@ -72,8 +72,8 @@ legend("topright",
        legend = c("All AGs",
                   expression("After"~pi[S]~"filter"),
                   "After synteny filter"),
-       fill = rev(c("#243040", "#5C7086", "#C3CDE8")), 
-       border = rev(c("#243040", "#5C7086", "#C3CDE8")), 
+       fill = rev(c("#0B3C49","#8E24AA","#E8A33D")), 
+       border = rev(c("#0B3C49","#8E24AA","#E8A33D")), 
        # border = c(rgb(0.80, 0.80, 0.80),
        #            rgb(0.60, 0.70, 0.80),
        #            rgb(0.05, 0.4, 0.6),
@@ -83,4 +83,5 @@ legend("topright",
        #          rgb(0.05, 0.4, 0.6),
        #          rgb(0.05, 0.05, 0.15)),
        bty = "n")
+
 

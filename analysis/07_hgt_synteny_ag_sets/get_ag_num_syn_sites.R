@@ -20,7 +20,7 @@ length(ag_syn_sites)
 tail(ag_syn_sites)
 
 
-for (t in 1:86) {
-     idx <- ((t-1)*8+1):min(t*8, length(ag_syn_sites))
+for (t in 1:79) {
+     idx <- ((t-1)*10+1):min(t*10, length(ag_syn_sites))
      cat("\t", t, ":", min(ag_syn_sites[idx]), "-", max(ag_syn_sites[idx]), "\n")
 }

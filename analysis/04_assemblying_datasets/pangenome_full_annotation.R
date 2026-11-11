@@ -125,6 +125,7 @@ pirate_anno <- merge(pirate_anno, collapsed,
 
 # flag fission/fusion alleles ---------------------------------------------
 fwrite(pirate_anno, paste0(outdir_dat, "/all_pirate_anno_full_intact_fis_fus.csv"))
+# pirate_anno <- fread(paste0(outdir_dat, "/all_pirate_anno_full_intact_fis_fus.csv"))
 
 # remove fis/fuse alleles
 pirate_anno <- pirate_anno[!grepl("[()]", fus_locus_tag)]
@@ -424,6 +425,53 @@ pirate_anno <- merge(pirate_anno,
                      all.x = TRUE, by = "locus_tag")
 
 
+# PART 3. Add Kaptive -------------------------------------------------
+ln <- readLines("./input_data/kaptive/o_antigen_results.json")
+
+kaptive_o_antigen <- rbindlist(lapply(ln, function(x) {
+  r <- jsonlite::fromJSON(x, simplifyVector = TRUE)
+  g <- r$gene_hits
+  data.table(geno_id  = r$genome,
+             kap_id   = g$gene_ids,
+             kstart   = pmin(g$t_starts, g$t_ends),
+             kend     = pmax(g$t_starts, g$t_ends),
+             strand   = g$strands,
+             expected = g$is_expected,
+             inside   = g$is_inside,
+             cov      = g$coverages,
+             ident    = r$protein_identities,
+             product  = g$product_descriptions)
+}), use.names = TRUE)
+
+kaptive_o_antigen[, kap_gene := sub(".*_", "", kap_id)]      # OL2α.2_01_wzm -> wzm
+kaptive_o_antigen[, reflocus := sub("_[0-9]+_[^_]+$", "", kap_id)]
+
+kaptive_dt <- kaptive_o_antigen[, .(geno_id, kstart, kend, kap_gene)]
+
+setkey(kaptive_dt, geno_id, kstart, kend)
+setkey(genes_dt, geno_id, gstart, gend)
+
+gene_kaptive <- foverlaps(
+  genes_dt,
+  kaptive_dt,
+  by.x = c("geno_id", "gstart", "gend"),
+  by.y = c("geno_id", "kstart", "kend"),
+  type = "any",     # gene fully inside region
+  nomatch = NA
+)
+
+gene_kaptive[, ov := pmin(gend, kend) - pmax(gstart, kstart) + 1L]
+gene_kaptive[, ov_frac := ov / (gend - gstart + 1L)]
+
+gene_kaptive <- gene_kaptive[!is.na(kstart)  & ov_frac > 0.5]
+setorderv(gene_kaptive, c("locus_tag", "ov"), c(1, -1))
+gene_kaptive <- gene_kaptive[, .SD[1], by = locus_tag]
+
+pirate_anno <- merge(pirate_anno, 
+                     gene_kaptive[, .(locus_tag, kap_gene)],
+                     all.x = TRUE, by = "locus_tag")
+
+
 
 # get genome total length -------------------------------------------------
 
@@ -443,14 +491,6 @@ pirate_anno <- merge(pirate_anno, tot_length_dt,
                   all.x = TRUE, by =c("geno_id"))
 
 
-
-# Determine if there are any plasmid copies -------------------------------
-# pirate re-run including plasmid sequences
-
-# plasmid_cnv
-
-
-
 # intermediate 
 fwrite(pirate_anno, paste0(outdir_dat, "/all_pirate_anno_cogs.csv"))
 # pirate_anno <- fread(paste0(outdir_dat, "/all_pirate_anno_cogs.csv"))
@@ -468,6 +508,79 @@ setnames(pan_anno, c("fstart","fend","fstrand"), c("start","end","strand"))
 
 fwrite(pan_anno, paste0(outdir_dat, "/pangenome_anno.csv"))
 
+
+
+# Tidy display name -------------------------------------------------------
+# One display label per locus, for figures and tables.
+#
+#   1. Kaptive. Where a locus falls inside a typed O-antigen locus the call
+#      comes from a curated reference, so it is preferred over anything
+#      inferred from the generic annotation.
+#   2. The PIRATE consensus gene name, but only where the annotated product
+#      corroborates it, that is where the product contains the name. The
+#      consensus name is the modal name among family members and is not an
+#      identification: across this pangenome 29% of names sit on more than
+#      one gene family, 19% carry more than one distinct product, and only
+#      46% of name-product pairs agree. A product naming only a matched
+#      domain or family never licenses a gene name, so a "DNA-binding
+#      response regulator" is a winged-HTH family assignment, not ompR.
+#   3. Otherwise the product, shortened but not truncated.
+
+domain_only <- "domain-containing|DUF[0-9]|-like domain|family protein|, partial"
+
+tidy_product <- function(x) {
+
+  x <- gsub("%2C", ",", x, fixed = TRUE)
+
+  reps <- c(
+    "Glycosyltransferase 2-like domain-containing protein" = "GT2-like domain",
+    "Metallo-beta-lactamase domain-containing protein"     = "Metallo-beta-lactamase domain",
+    "ATP-binding cassette subfamily C exporter for protease/lipase" = "ABC exporter, protease/lipase",
+    "O-antigen chain terminator bifunctional methyltransferase/kinase WbdD" = "WbdD, O-antigen terminator",
+    "nitrogenase molybdenum-iron protein subunit beta" = "nitrogenase MoFe subunit beta",
+    "Type I restriction enzyme endonuclease subunit"   = "Type I restriction endonuclease",
+    "Type VI secretion system tip protein VgrG"        = "VgrG, T6SS tip",
+    "Type VI secretion protein VasK"                   = "TssM/VasK, T6SS",
+    "NAD(P)-dependent alcohol dehydrogenase"           = "NAD(P)-dependent ADH",
+    "PTS mannose transporter subunit IIAB"             = "PTS mannose IIAB",
+    "pyruvate:ferredoxin (flavodoxin) oxidoreductase"  = "pyruvate:ferredoxin oxidoreductase",
+    "3-polyprenyl-4-hydroxybenzoate carboxy-lyase"     = "3-polyprenyl-4-HB carboxy-lyase",
+    "ATP-dependent RecD-like DNA helicase"             = "RecD-like DNA helicase")
+
+  hit <- match(x, names(reps))
+  x[!is.na(hit)] <- unname(reps[hit[!is.na(hit)]])
+
+  # generic: a matched domain is a domain, not a protein
+  x <- sub(" domain-containing protein$", " domain", x)
+  x <- sub("^(DUF[0-9]+) domain$", "\\1", x)
+  x <- sub("^polymannosyl .*WbdA$", "WbdA mannosylpolymerase", x)
+
+  trimws(x)
+}
+
+# the corroboration test is row-wise, so it is run once per distinct
+# name-product pair rather than once per locus
+nm_pairs <- unique(pirate_anno[, .(consensus_gene_name, consensus_product)])
+
+nm_pairs[, name_ok :=
+           !is.na(consensus_gene_name) & consensus_gene_name != "" &
+           !is.na(consensus_product) &
+           !grepl(domain_only, consensus_product, ignore.case = TRUE) &
+           mapply(function(n, p) grepl(tolower(n), tolower(p), fixed = TRUE),
+                  consensus_gene_name, consensus_product)]
+
+pirate_anno[nm_pairs, on = .(consensus_gene_name, consensus_product),
+            name_ok := i.name_ok]
+
+pirate_anno[, tidy_name := fcase(
+  !is.na(kap_gene) & kap_gene != "",                   kap_gene,
+  name_ok %in% TRUE,                                   consensus_gene_name,
+  !is.na(consensus_product) & consensus_product != "", tidy_product(consensus_product))]
+
+# nothing usable in the annotation: fall back to the family id
+pirate_anno[is.na(tidy_name) | tidy_name == "", tidy_name := gene_family]
+
+pirate_anno[, name_ok := NULL]
 
 
 # Add anchors and AGs back to main anno -----------------------------------

@@ -36,13 +36,24 @@ png(paste0(outdir_fig,"/core_pangenome_stats.png"),
 
 
 # plots
-mat <- matrix(c(rep(1,3),2,2,3), byrow =TRUE, ncol = 3)
+mat <- matrix(c(rep(1,3),rep(2,3),3,3,4), byrow =TRUE, ncol = 3)
 
 
-layout(mat, widths = c(1,0.75,0.75),
-       heights = c(2,1))
+layout(mat, widths = c(1,1,0.75,0.75),
+       heights = c(1.1,1.9,0.9))
 
-# Add phylogenetic tree
+# layout.show(4)
+
+
+# Plot 1 heterogeneous environments ----------------------------------------
+source("./analysis/04_assemblying_datasets/plot_st_by_environment.R")
+usr <- par("usr")
+
+text(x = usr[1]- 4, y = usr[4]-2, labels = "a", 
+     xpd = TRUE, font = 2,cex = 1.5)
+
+# Plot 2 add phylogenetic tree --------------------------------------------
+
 par(mar = c(2,1,3,1))
 tree <- read.tree("./input_data/bootstrapped_pangraph_gubbins/boot_gub_pang_100.final_bootstrapped_tree.tre")
 ST_groups <- unique(pan_anno[,.(geno_id, ST)])
@@ -81,7 +92,7 @@ names(ST_cols) = tree$tip.label
 tree$node.label <- gsub("100","", tree$node.label)
 
 # Plot circular tree
-lim <- c(-1.29, 1.29)
+lim <- c(-1.35, 1.35)
 plot(tree,
      edge.width = 0.8,
      type = "fan",
@@ -121,7 +132,7 @@ split_consecutive_angle <- function(indices, angle_order){
   split(indices[order(pos)], cumsum(breaks))
 }
 
-draw_clade_arc <- function(tip_indices, col="grey30", lwd=2, radius=1.2, label_radius=1.22,
+draw_clade_arc <- function(tip_indices, col="grey30", lwd=2, radius=1.27, label_radius=1.29,
                            label_text=NULL){
   
   if(length(tip_indices) == 0) return()  # skip empty
@@ -167,6 +178,12 @@ draw_clade_arc <- function(tip_indices, col="grey30", lwd=2, radius=1.2, label_r
          font = 2)
   }
 }
+
+usr <- par("usr")
+
+text(usr[1]+0.65, usr[4] - 0.3, "b", 
+     font = 2, cex = 1.5)
+
 
 # loop through and ad arcs
 for(i in unique(ST_groups$ST)){
@@ -217,11 +234,11 @@ for(i in unique(ST_groups$ST)){
 }
 
 # gene distribution
-par(mar = c(6,6,1,0.5))
+par(mar = c(6,6,1,0.5), xpd = FALSE)
 with(freq_dat,
      barplot(log10_n~number_genomes,
              border = NA,
-             yaxt = "n",
+             yaxt = "n", 
              col = "grey40",
              ylab = expression("log"[10]~"Number of genes"),
              xlab = "Number of genomes"))
@@ -233,7 +250,7 @@ axis(side=2, at = seq(0,3.5,0.5),
 
 usr <- par("usr")
 
-text(x = usr[1]- 55, y = usr[4], labels = "b", 
+text(x = usr[1]- 55, y = usr[4], labels = "c", 
      xpd = TRUE, font = 2,cex = 1.5)
 
 # Green-themed colours
@@ -280,7 +297,7 @@ segments(x_pos1,y_pos1,x_pos2,y_pos2)
 
 usr <- par("usr")
 
-text(x = usr[1]+.1, y = usr[4], labels = "c", 
+text(x = usr[1]+.1, y = usr[4], labels = "d", 
      xpd = TRUE, font = 2,cex = 1.5)
 
 dev.off()

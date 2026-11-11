@@ -5,8 +5,18 @@ msu_paths_dt <- fread(paste0(outdir_dat, "/msu_paths_dt.csv"))
 path_dt <- fread(paste0(outdir_dat, "/path_dt.csv"))
 
 pan_anno <- fread(paste0(outdir_dat, "/pangenome_anno.csv"))[max_dose <=1]
-nodes_dt <- fread(paste0(outdir_dat, "/nodes_dt.csv"))
-msu_mergers_dt <- fread(paste0(outdir_dat, "msu_mergers_dt.csv")) # core block ids
+nodes_dt <- fread(paste0(outdir_dat, "/nodes_dt.csv"), 
+                  colClasses = list(character = c("node_id", "block_id")))
+
+# block counts (as in pangraph.R; not saved in nodes_dt.csv)
+nodes_dt[, count := .N, by = block_id]
+nodes_dt[, n_strains := uniqueN(geno_id), by = block_id]
+
+# core block ids (as in pangraph.R; msu_mergers_dt.csv was not saved)
+MSU_mergers <- yyjsonr::read_json_file("./input_data/pangraph/MSU_mergers.json",
+                                       int64 = "string")
+msu_mergers_dt <- data.table(msu_mergers = unlist(MSU_mergers), 
+                             block_id = names(MSU_mergers))
 
 # parms
 # geno_ids
@@ -239,11 +249,53 @@ anchor_msu_regions <- function(
   
   syn_blocks <- rbindlist(syn_blocks)
   
+  # leading and lagging blocks: loci inside the msu region but before the
+  # first anchor (A0:A1) or after the last anchor (An:An+1)
+  n_anchors <- nrow(ordered_families)
+  first_fam <- ordered_families[1, gene_family]
+  last_fam  <- ordered_families[n_anchors, gene_family]
+  lead_name <- paste0("A0:", ordered_families[1, anchor])
+  lag_name  <- paste0(ordered_families[n_anchors, anchor], ":A", n_anchors + 1)
+  
+  edge_blocks <- msu_region[
+    , {
+      i_first <- which(gene_family == first_fam)
+      i_last  <- which(gene_family == last_fam)
+      
+      # Require exactly one copy of each terminal anchor per geno_id
+      if (length(i_first) == 1L && length(i_last) == 1L) {
+        
+        if (i_first <= i_last) {
+          lead <- seq_len(i_first - 1L)
+          lag  <- if (i_last < .N) (i_last + 1L):.N else integer(0)
+        } else {
+          # reverse orientation
+          lead <- if (i_first < .N) (i_first + 1L):.N else integer(0)
+          lag  <- seq_len(i_last - 1L)
+        }
+        
+        list(fus_locus_tag = fus_locus_tag[c(lead, lag)],
+             anchor        = c(rep(lead_name, length(lead)), 
+                               rep(lag_name, length(lag))))
+      } else {
+        NULL
+      }
+    },
+    by = geno_id
+  ]
+  
+  if (!"anchor" %in% names(edge_blocks)) {
+    edge_blocks <- data.table(fus_locus_tag = character(), anchor = character())
+  }
+  
+  leading_block <- edge_blocks[anchor == lead_name, .(fus_locus_tag, anchor)]
+  lagging_block <- edge_blocks[anchor == lag_name, .(fus_locus_tag, anchor)]
+  
   # add anchors
   
-  syn_blocks <- rbind(#leading_block,
+  syn_blocks <- rbind(leading_block,
     syn_blocks,
-    #lagging_block,
+    lagging_block,
     merge(ordered_families[,.(gene_family, anchor)], 
           anno[, .(gene_family, fus_locus_tag)],
           all.x = TRUE, by = "gene_family")[,.(fus_locus_tag, anchor)])

@@ -3,7 +3,7 @@ prob_theta <- fread(paste0(outdir_dat, "/prob_pi_norm.csv"))
 
 # slice_freq <- round(quantile(prob_theta$freq, probs = c(0,0.25,0.5,0.75,1)), digits = 0)
 
-slice_freq =c(6, 32, 119, 199, 249)
+slice_freq =c(6, 32, 86, 182, 250)
 
 s_range = range(as.integer(gsub("s_","", names(prob_theta[,-1]))))
 
@@ -17,7 +17,7 @@ y <- as.numeric(sub("s_", "", colnames(z)))           # segregating sites (numer
 obs <- fread(paste0(outdir_dat, "/set_outliers.csv"))
 
 # look at waterson's theta only, set 1
-obs <- obs[set==1 & !is.na(w_theta_sel)]
+obs <- obs[set==1 & !is.na(pi_sel)]
 
 get_p   <- function(f, s) z[match(f, x), match(s, y)]
 obs$p   <- mapply(get_p, obs$freq, round(obs$seg_s_sites))
@@ -41,7 +41,7 @@ for (i in 1:5) {
   
   # plot
   plot(NULL, pch = 16,
-       xlim = c(s_range[1], 20),  
+       xlim = c(s_range[1], 35),  
        ylim = 0:1,
        yaxt = "n",
        ylab = "",
@@ -72,8 +72,8 @@ for (i in 1:5) {
   #add outliers
   with(obs[freq==slice_freq[i]],
        points(seg_s_sites, p, pch = 16, cex = 1, 
-              col = ifelse(w_theta_sel == "balancing" &  p_bh <= 0.05, "#3FA9F5", 
-                           ifelse(w_theta_sel == "directional" &  p_bh <= 0.05, "#F26C2A", 
+              col = ifelse(pi_sel  == "balancing" &  p_bh <= 0.05, "#3FA9F5", 
+                           ifelse(pi_sel   == "directional" &  p_bh <= 0.05, "#F26C2A", 
                                   rgb(0.1,0.1,0.1, alpha = 0.5))))
        )
 }

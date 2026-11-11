@@ -27,22 +27,23 @@ setorder(exp_curve, freq)
 # cex_pt <- 0.4 + 1.0 * (rank(gene_pvals$gene_length) / nrow(gene_pvals))
 
 # ---------------------------------------------------------------------------
-png(paste0(outdir_fig,"/outliers_seg_sites_per_site.png"),
-    width = 17, height = 13, units = "cm", res = 300,
-    pointsize = 12, type = "cairo")
+# png(paste0(outdir_fig,"/outliers_seg_sites_per_site.png"),
+#     width = 17, height = 13, units = "cm", res = 300,
+#     pointsize = 10, type = "cairo")
 
-par(mar = c(5, 5, 2, 1), bty = "o")
+par(bty = "o")
 
-plot(gene_pvals$freq, gene_pvals$s_per_site, type = "n",
+plot(gene_pvals$freq, gene_pvals$s_per_site, type = "n", lwd = 1.1,
      xlab = expression("Pangenome frequency ("*italic(k)*")"),
-     ylab = "", xaxt = "n", las = 2, ylim = c(0,0.6))
+     ylab = "Segregating sites per site",
+     xaxt = "n", las = 2, ylim = c(0,0.6))
 
-axis(side = 2, at = max(gene_pvals$s_per_site)/2,
-     labels = "segregating sites per site", 
-     line = 2.5, tick = FALSE)
+# axis(side = 2, at = max(gene_pvals$s_per_site)/2,
+#      labels = "Segregating sites per site", 
+#      line = 2.5, tick = FALSE, cex = 1)
 
-axis(side = 1, at = pretty(gene_pvals$freq),
-     labels = pretty(gene_pvals$freq))
+axis(side = 1, at = seq(0,250,50),
+     labels = seq(0,250,50))
 
 points(gene_pvals$freq, gene_pvals$s_per_site,
        pch = 16, col = pt_col) #  cex = cex_pt,
@@ -64,7 +65,7 @@ perc_AGs_out = (nrow(gene_pvals[call!="ns",])/nrow(gene_pvals))*100
 
 mtext(bquote(atop(.((nrow(gene_pvals[call!="ns",])))*" ("*.(sprintf("%2.2f",perc_AGs_out))*"%) AGs",
                   "")), 
-      side = 3, line = -1, cex = 0.75)
+      side = 3, line = -1, cex = 0.9)
 
 spearmans <- with(gene_pvals, suppressWarnings(cor.test(freq, s_per_site, method = "spearman")))
 
@@ -77,37 +78,59 @@ p_part <- if (spearmans$p.value < 0.001) {
 }
 
 mtext(bquote(rho == .(rho_val) * ";" ~ .(p_part)),
-      side = 3, adj = 0.5, line = -1.9, cex = 0.8)
+      side = 3, adj = 0.5, line = -1.9, cex = 0.9)
 
 legend("topright", #horiz = TRUE,
-       legend = c("High outlier (BH FDR < 0.05)","Low outlier (BH FDR < 0.05)",
+       title = expression("BH FDR,"~italic(q) < 0.05),
+       legend = c("High outlier","Low outlier",
                   "Non-significant"),
        col = c(rgb(0.2, 0.6, 1, alpha = 1),"#F26C2A", "grey60"),
        pch = c(16, 16,16),
-       bty = "n", cex = 0.8)
+       bty = "n", cex = 0.9)
+
+legend("topleft", expression(hat(italic(alpha)) == 2.89*","~hat(italic(theta)) == 0.031),
+       bty = "n", cex = 0.9)
 
 # sanity checks (new)
-trouble_children = data.table(gene_family = c("g000145", "g002611", "g004058",#Outer membrane 
-                                              "g000322", "g001147", "g004051", "g003783", "g000817",#5 co-inherited, O-antigen is textbook NFDS
-                                              "g002097",#interbacterial competition
-                                              "g000382","g000849_1", # Efflux and envelope stress, adaptive variation in efflux capacity 
-                                              "g003299"
-                                              ), 
-                              consensus_gene_name = c("OmpA", "OmpK36","ompR", 
-                                                      "wbbM1", "rfbD", "rfbA", "rfbB", "glycosyltransferase",
-                                                      "impA",
-                                                      "acrA","baeS",
-                                                      "AbiEi"
-                                                      ),
-                              dx = c(-20, -20, -15,
-                                     15, -20, -20,  15, -20,
-                                     15,
-                                     -15, -12,
-                                     -15),
-                              dy = c( 0.000,  0.005, -0.010,
-                                      -0.005,  0.010,  0.010,  0.015, -0.015,
-                                      0.010,
-                                      -0.005,  0.020,
+trouble_children = data.table(gene_family = c("g004051", "g003783", "g001147", "g000322", # O1/O2 O-antigen locus (one locus, A308:A309)
+                                              "g003390", "g003914",                       # T6SS (one cluster, A164:A165)
+                                              "g003299", "g001254",                       # AbiE toxin-antitoxin operon (A22:A23)
+                                              "g002556",                                  # acid resistance
+                                              "g001058",                                  # chromate efflux
+                                              "g002655", "g003239",                       # acetoin catabolism operon (A169:A170)
+                                              "g002664",                                  # ectoine degradation (A68:A69)
+                                              "g003377", "g004320",                       # sorbose/sorbitol (A7:A8)
+                                              "g002126_1",                                # glycerol-3-phosphate uptake (fosfomycin entry)
+                                              "g006452"),                                 # fumarate hydratase
+                              consensus_gene_name = c("wzm", "wzt", "glf", "wbbM",
+                                                      "vgrG", "tssA",
+                                                      "abiEi", "abiEii",
+                                                      "asr",
+                                                      "chrA",
+                                                      "acoA", "acoB",
+                                                      "phyH",
+                                                      "sorF", "sorC",
+                                                      "glpT",
+                                                      "ttdA"),
+                              dx = c( 18,  18, -18, -20,
+                                     -12, -12,
+                                     -15, -11,
+                                      12,
+                                     -12,
+                                     -15,  15,
+                                      12, 
+                                     -15,  10,
+                                     -12,
+                                      10),
+                              dy = c( 0.060, -0.005,  0.040,  0.000,
+                                      0.030, -0.030,
+                                      0.000,  -0.015,
+                                     -0.040,
+                                      0.050,
+                                     -0.050, -0.020,
+                                      0.040,  
+                                      0.040, 0.025,
+                                      0.040,
                                       0.005))
 
 tc <- merge(trouble_children,
@@ -137,73 +160,22 @@ text(tc$freq + tc$dx, tc$s_per_site + tc$dy,
      cex = 0.8, font = 3, xpd = NA)
 # dev.off()
 
-# ---------------------------------------------------------------------------
-# Diagnostic worth looking at before trusting the panel above: observed
-# against expected on the raw count scale. If the cloud sits systematically
-# off the 1:1 line, the null is miscalibrated for the accessory genome
-# rather than individual genes being under selection.
-
-# pdf("obs_vs_exp_diagnostic.pdf", wigene_pvalsh = 3.3, height = 3.3, pointsize = 8)
-par(mfrow = c(1,2), mar = c(3.2, 3.4, 0.6, 0.6), mgp = c(2.0, 0.6, 0), bty = "n",
-    family = "sans", las = 1, tcl = -0.3)
-
-lim <- range(c(gene_pvals$expected_S, gene_pvals$seg_sites), finite = TRUE)
-plot(gene_pvals$expected_S, gene_pvals$seg_sites, pch = 16, cex = 0.5, col = pt_col,
-     xlim = lim, ylim = lim, xlab = "expected S", ylab = "observed S")
-abline(0, 1, lty = 2, col = "grey40")
-with(gene_pvals[gene_family %chin% high_flanks],
-     points(expected_S, seg_sites, cex = 0.5,
-            pch = 16, col = "red"))
-
-lim <- range(c(gene_pvals$exp_per_site, gene_pvals$s_per_site), finite = TRUE)
-plot(gene_pvals$exp_per_site, gene_pvals$s_per_site, pch = 16, cex = 0.5, col = pt_col,
-     xlim = lim, ylim = lim, xlab = "expected S per site", ylab = "observed S per site")
-abline(0, 1, lty = 2, col = "grey40")
-par(mfrow = c(1,1))
-# dev.off()
-
-
-anno <- unique(fread(paste0(outdir_dat, "/all_pirate_anno_full.csv"), 
-                     select = c("gene_family", "consensus_gene_name","consensus_product",
-                                "alleles_at_maximum_threshold")))
-
-gene_pvals[call=="low", .(gene_family, freq,gene_length, syn_sites, expected_S, seg_sites)][order(expected_S)]-> temp_low; temp_low 
-names_low <- anno[gene_family %chin% gene_pvals[call=="low", gene_family]]
-names_low[order(match(gene_family, temp_low$gene_family))]
-
-gene_pvals[call=="high" & freq >50, .(gene_family, freq,gene_length, syn_sites, expected_S, seg_sites)][order(expected_S)]-> temp_high; temp_high  
-names_high <- anno[gene_family %chin% gene_pvals[call=="high" & freq >50, gene_family]]
-names_high[order(match(gene_family, temp_high$gene_family))]
-
-
-# output these candidates:
-low_cands <- merge(temp_low, names_low, by = "gene_family")
-low_cands[, outlier_set := "low"]
-
-high_cands <- merge(temp_high, names_high, by = "gene_family")
-high_cands[, outlier_set := "high"]
-
-out <- rbind(low_cands, high_cands)
-
-out[, seg_per_allele := fifelse(alleles_at_maximum_threshold > 0,
-                                seg_sites / alleles_at_maximum_threshold,
-                                NA_real_)]
-
-out[, obs_exp_ratio := fifelse(expected_S > 0, seg_sites / expected_S, NA_real_)]
-
-fwrite(out,
-       paste0(outdir_dat, "/Ls_outlier_candidates.csv"))
-
-
-
-# every family whose name or product mentions ompR or envZ
-check <- unique(fread(paste0(outdir_dat, "/all_pirate_anno_full.csv"),
-                      select = c("gene_family", "freq", "max_dose", "ag_type",
-                                 "consensus_gene_name", "consensus_product")))
-
-check[grepl("ompR|envZ", consensus_gene_name, ignore.case = TRUE) |
-        grepl("ompR|envZ|osmolarity|EnvZ", consensus_product, ignore.case = TRUE)][
-          order(-freq)]
-
-
-
+# 
+# gene_pvals[call == "low" & freq < 100] -> ad_track_candidates
+# 
+# anno <- fread(paste0(outdir_dat, "/all_pirate_anno_full.csv"),
+#               select = c("locus_tag","gene_family", "product","gene_length", "gene",
+#                          "freq", "ag_type","ST",
+#                          "consensus_gene_name","consensus_product",
+#                          "alleles_at_maximum_threshold"))
+# 
+# anno <- anno[gene_family %chin% ad_track_candidates$gene_family]
+# anno <- anno[, n_ST_allele := .N, by = c("gene_family", "ST")]
+# 
+# anno <- unique(anno[,.(gene_family, freq, consensus_gene_name, consensus_product,ST, n_ST_allele, alleles_at_maximum_threshold)])
+# 
+# anno <- anno[, n_ST := uniqueN(ST), gene_family]
+# 
+# anno <- dcast(anno, gene_family + freq + consensus_gene_name + consensus_product + alleles_at_maximum_threshold + n_ST ~ ST,  value.var = "n_ST_allele" )
+# 
+# fwrite(anno, "C:/Users/carac/Desktop/low_ags.csv")

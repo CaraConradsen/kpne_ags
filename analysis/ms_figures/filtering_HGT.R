@@ -5,14 +5,18 @@ IQR_threshold = round(median(piS_dist$pi_s) + (IQR(piS_dist$pi_s) * 3), digits =
 
 
 ag_gene_dat <- unique(fread(paste0(outdir_dat, "/all_pirate_anno_full.csv"), 
-                            select = c("gene_family","number_genomes", "average_dose", 
+                            select = c("gene_family","freq", "max_dose", 
                                        "ag_type", "acrs_msu", "acrs_jun")))
 
-ag_gene_dat <- ag_gene_dat[ag_type != "core"][average_dose <= 1][number_genomes != 1]
+ag_gene_dat <- ag_gene_dat[ag_type!="core"][freq > 1][max_dose <= 1]
 
 # non syntenic AGs
 
-non_syn <- ag_gene_dat[acrs_msu==1 | acrs_jun ==1, gene_family]
+placed_ags <- unique(fread(paste0(outdir_dat, "/all_pirate_anno_full.csv"), 
+                           select = c("gene_family", "anchor")))[grepl(":", anchor), unique(gene_family)]
+
+non_syn <- c(ag_gene_dat[!gene_family %chin% ag_gene_dat[acrs_msu==0 & acrs_jun ==0, gene_family]][, gene_family],
+             ag_gene_dat[!gene_family %chin% placed_ags, gene_family])
 
 # pi outliers
 pis_out <- fread(paste0(outdir_dat, "/piS_3IQR_outliers.csv"))$gene_family
@@ -35,13 +39,13 @@ png(paste0(outdir_fig,"/filtering_plot.png"),
     pointsize = 11, type = "cairo")
 
 
-split.screen(rbind(c(0, 0.45, 0.5, 0.9),
+split.screen(rbind(c(0.0125, 0.475, 0.7, 1),
                    c(0.5, 1, 0.745, 0.97),
                    c(0.5, 1, 0.52, 0.745),
                    c(0.5, 1, 0.295, 0.52),
                    c(0.5, 1, 0.07, 0.295),
-                   c(0, 0.45, 0.1, 0.45),
-                   c(0.1, 0.5, 0, 0.1))
+                   c(0.1, 0.5, 0.45, 0.7),
+                   c(0.0125, 0.475, 0.025, 0.45))
 )
 
 
@@ -91,7 +95,7 @@ text(IQR_threshold,1500,
 mtext(expression(pi[S]), side =1, line = 2)
 
 mtext("a", side = 3, outer = TRUE,
-      adj = 0, line = -4, font = 2)
+      adj = 0, line = -1, font = 2)
 
 # mtext("a", side = 3, outer = TRUE,
 #       adj = 0, font = 2)
@@ -157,7 +161,7 @@ mtext("c", side = 2,
       las = 2,
       font = 2,
       adj = 0,
-      padj = 5)#17
+      padj = -12)#17
 
 # Map base-R screen coordinates to grid viewport
 vp <- baseViewports()
@@ -214,72 +218,16 @@ close.screen(6)
 
 screen(7)
 
-# # parsimonious gains vs. CI
-# par(mar = c(4,4,0.25,0.25),
-#     bty = "n",
-#     oma = c(0,1,0,0))
-# 
-# plot(NULL, bty = "n",
-#      xlim = c(1, 21),
-#      ylim = c(0, 45),
-#      yaxt = "n", 
-#      xaxt = "n",
-#      xlab = "",
-#      ylab = "")
-# 
-# axis(at  = 20, labels = "Number of gains",
-#      side = 2, tick = FALSE,
-#      line = 1.5)
-# 
-# axis(at  = 10.5, labels = "Consistency index", 
-#      side = 1, tick = FALSE, 
-#      line = 1.5)
-# 
-# axis(side = 2, at = seq(0,40,10),
-#      labels = seq(0,40,10), las = 2)
-# 
-# axis(side = 1, at = seq(1,21,4),
-#      labels = seq(0,1,0.2))
-# 
-# abline(h = 1, lty = 2)
-# 
-# # Add violins
-# for (i in seq_along(gain_list)) {
-#   vioplot(gain_list[[i]],
-#           drawRect = FALSE,
-#           col = rgb(0.8, 0.54, 0.18, alpha = 0.75),
-#           border = rgb(0.8, 0.54, 0.18, alpha = 1),
-#           at = positions[i], 
-#           bty = "n",   
-#           boxwex = 1,
-#           add = TRUE)
-#   
-#   boxplot(gain_list[[i]], 
-#           at = positions[i],
-#           yaxt = "n",
-#           outline = FALSE,
-#           boxwex = 0.5,
-#           staplewex = 0,
-#           outwex = 1.5,
-#           col = "gray20",
-#           border = "gray20",
-#           lty = 1,
-#           pch = 16,
-#           add = TRUE)
-#   
-#   points(positions[i],
-#          median(gain_list[[i]]),
-#          pch = 21,
-#          cex = 0.5,
-#          bg = "white")
-# }
-# 
-# mtext("c", side = 2,
-#       outer = TRUE,
-#       las = 2,
-#       font = 2,
-#       adj = 0,
-#       padj = -12.5)
+source("./analysis/07_hgt_synteny_ag_sets/barplot_ag_filtering.R")
+mtext("a", side = 3, outer = TRUE,
+      adj = 0, font = 2)
+
+mtext("d", side = 2,
+      outer = TRUE,
+      las = 2,
+      font = 2,
+      adj = 0,
+      padj = 5)#17
 
 close.screen(7)
 
