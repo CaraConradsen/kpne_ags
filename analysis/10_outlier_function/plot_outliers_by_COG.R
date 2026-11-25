@@ -24,10 +24,15 @@ cog_ag_types <- TRUE          # FALSE draws the pooled figure
 
 n_genomes <- 260
 
-gene_pvals[, ag_type := cut(freq / n_genomes, c(0, 0.15, 0.95, 1),
-                         labels = c("Cloud (<15%)", "Shell (15-95%)",
-                                    "Soft-core (>95%)"),
-                         include.lowest = TRUE)]
+# cloud <= 15%, shell > 15% and < 95%, soft-core >= 95%
+gene_pvals[, ag_type := fcase(freq * 100 <= 15 * n_genomes, "Cloud (≤15%)",
+                              freq * 100 <  95 * n_genomes, "Shell (>15% and <95%)",
+                              default = "Soft-core (≥95%)")]
+
+# keep as an ordered factor: ag_type_cols and b_off are built from levels()
+gene_pvals[, ag_type := factor(ag_type, levels = c("Cloud (≤15%)",
+                                                   "Shell (>15% and <95%)",
+                                                   "Soft-core (≥95%)"))]
 
 ag_type_cols <- setNames(c("#3FB0E8", "#B22222", "#00285B"),
                       levels(gene_pvals$ag_type))
@@ -72,12 +77,14 @@ cog_set <- merge(cog_set, COG_dt,
 COG_dt[!broad_ord %chin% cog_set$broad_ord]
 
 # tidy data
-new_cols <- unique(cog_set[, .(broad_ord)])[order(broad_ord)]
+grp_ord  <- c("Information storage and processing", "Metabolism",
+              "Cellular processes and signalling", "")
+new_cols <- unique(cog_set[, .(broad_ord, desc)])[order(match(desc, grp_ord), broad_ord)][, .(broad_ord)]
 new_cols[, new_y := .I]
 mx_y = max(new_cols$new_y)
 cog_set <- cog_set[new_cols, on = "broad_ord"]
 
-fwrite(cog_set, paste0(outdir_dat, "/bh_p_cog_set.csv"))
+# fwrite(cog_set, paste0(outdir_dat, "/bh_p_cog_set.csv"))
 
 # x axis scale ------------------------------------------------------------
 log_mod_x <- cog_x == "signed_logp"
@@ -90,7 +97,7 @@ x_ticks <- x_ticks[x_ticks >= min(cog_set$signed_logp) &
                      x_ticks <= max(cog_set$signed_logp)]
 
 x_lab <- switch(cog_x,
-                signed_logp  = expression("Signed log"[10]~italic(p)),
+                signed_logp  = expression("Signed" ~ -log[10] ~ italic(P)),
                 s_per_site   = "Segregating sites per synonymous site",
                 log2_obs_exp = expression(log[2]~"(observed / neutral expectation)"))
 
@@ -104,12 +111,9 @@ cog_set[, side := fifelse(signed_logp < 0, -1L, 1L)]
 cat("Missing COGs:\n")
 print(COG_dt[!COG_letter %chin% cog_set$COG_letter, .(COG_letter, COG_function, desc)])
 
-# plot set 1 --------------------------------------------------------------
+# draw_cog_plot --------------------------------------------------------------
 
-png(paste0(outdir_fig, "/piS_theta_cog_by_ag_type_set_1.png"),
-    width = 34, height = 18,
-    units = "cm", res = 300,
-    pointsize = 14, type = "cairo")
+draw_cog_plot <- function(){
 
 or_strip_w    <- 3.4    # width of one strip
 or_strip_gap  <- 1    # gap between strips
@@ -124,14 +128,14 @@ or_strip_at <- function(i) {
 
 lab_line <- or_strip_at(or_n_strips)[2] + 0.4
 
-par(mar = if (cog_ag_types) c(4, 17, 2, lab_line + 1) else c(4, 17, 1, 7))  
+par(mar = if (cog_ag_types) c(5, 19.1, 2, lab_line + 1.4) else c(4, 17, 1, 7))
 plot(NULL,
      bty = "L", yaxt = "n", xaxt = "n",
      ylab = "",
      xlab = x_lab,
      ylim = c(mx_y + 1, 0),
      xlim = range(cog_set$x_plot) +
-       c(-0.04, if (cog_ag_types) 0.08 else 0.05) * diff(range(cog_set$x_plot)))
+       c(-0.17, if (cog_ag_types) 0.17 else 0.05) * diff(range(cog_set$x_plot)))
 
 # width of n margin lines, expressed in user x units. Defined here because
 # the row shading needs it before the strips are drawn.
@@ -158,13 +162,20 @@ y_lab_dt <- unique(cog_set[, .(new_y, COG_letter, COG_function)])[order(new_y)]
 y_lab_dt[, lab := ifelse(COG_function == "Unassigned", COG_function,
                          paste0(COG_letter, ", ", COG_function))]
 
+cog_abbr <- c(D = "Cell cycle con., cell div., chrom. part.",
+              O = "Post-transl. mod., prot. turnover, chaperones",
+              U = "Intra. traf., secret. and ves. trans.",
+              Q = "Sec. metabol. biosyn., trans. and cata.")
+y_lab_dt[COG_letter %chin% names(cog_abbr),
+         lab := paste0(COG_letter, ", ", cog_abbr[COG_letter])]
+
 axis(side = 2, at = y_lab_dt$new_y, labels = FALSE, col = "grey30")
 axis(side = 2, at = y_lab_dt$new_y, labels = y_lab_dt$lab, tick = FALSE,
-     line = 0.3, cex.axis = 0.5, col.axis = "black", las = 2)
+     line = 0.3, cex.axis = 0.72, col.axis = "black", las = 2)
 
 # second y-axis
 axis(side = 4, at = y_lab_dt$new_y, labels = y_lab_dt$COG_letter, tick = FALSE,
-     line = 17, cex.axis = 0.5, col.axis = "grey30", las = 2)
+     line = lab_line - 0.4, cex.axis = 1, col.axis = "grey30", las = 2)
 
 abline(v = 0, col = "grey30", lwd = 1, lty = 2)
 
@@ -175,15 +186,16 @@ b_off <- setNames(c(-0.24, 0, 0.24), levels(cog_set$ag_type))
 row_top <- 0.24 + 0.10
 
 # add text label
-mtext("a", side = 3, adj = "-0.05", font = 2, line = -1)
+mtext("a", side = 3, adj = -0.05, font = 2, line = -1, cex = 8/7)
 
 # Gene label text ----------------------------------------------------------
 # Labels come from tidy_name
-max_lab <- 34   
+max_lab <- 24  
 
 lab_short <- c(
   "Transcriptional regulator AbiEi antitoxin N-terminal domain" =
     "AbiEi antitoxin N-term domain")
+
 
 # Smallest cell drawn as a violin
 min_vio <- 3
@@ -250,23 +262,8 @@ for (i in 1:mx_y) {
   }
 }
 
-# NOTE: drawn after the violins and points, so the strips and their
-# axes sit on top of anything that reaches into the margin.
-# Odds-ratio strips ---------------------------------------------------------
-# The violins show how extreme the outliers within a category are. They
-# cannot show whether a category holds MORE outliers than expected, because
-# every gene drawn is already an outlier and the non-outliers are not on the
-# figure at all. Cell envelope biogenesis is the case that matters: M
-# carries 71 outliers, several among the most extreme p values here, and is
-# nonetheless DEPLETED (OR 0.64, q = 0.012).
-#
-# Four strips, read left to right: the excess-diversity comparison pooled
-# over all AGs and then split by AG type, then the same pair for the
-# deficit-diversity comparison. In a by-type strip each AG type is drawn at
-# the same vertical offset and in the same colour as its violin, so a row
-# reads straight across into the panel. A comparison with no row for a
-# category has no bar there, which is why the deficit strips are sparse:
-# they rest on 22 outliers, 20 of them shell genes.
+
+# odds-ratio strips ---------------------------------------------------------
 
 or_file      <- paste0(outdir_dat, "/cog_fisher_outliers.csv")
 or_clip      <- 2                       # log2 OR clipped to +/- this
@@ -343,8 +340,8 @@ if (cog_ag_types && file.exists(or_file)) {
     segments(or_xat(g, or_ticks), y0, or_xat(g, or_ticks), y0 + 0.18,
              col = "grey30", lwd = 0.8, xpd = NA)
     text(or_xat(g, or_ticks), y0 + 0.70, or_tick_labs,
-         cex = 0.45, col = "grey20", xpd = NA)
-    text(g$mid, y0 + 1.55, title, cex = 0.5, col = "grey20", xpd = NA)
+         cex = 0.72, col = "grey20", xpd = NA)
+    text(g$mid, y0 + 1.55, title, cex = 0.72, col = "grey20", xpd = NA)
     segments(g$mid, 0.4, g$mid, mx_y + 0.6, col = "grey70", lwd = 0.6,
              xpd = NA)
   }
@@ -358,7 +355,7 @@ if (cog_ag_types && file.exists(or_file)) {
     if (!sp$by_type) {
       d <- or_get(sp$cmp)
       n <- or_bars(g, d, "grey35", 0, 0.30)
-      or_stars(g, d, 0, 0.45)
+      or_stars(g, d, 0, 1)
       return(n)
     }
 
@@ -366,7 +363,7 @@ if (cog_ag_types && file.exists(or_file)) {
     sum(vapply(levels(cog_set$ag_type), function(b) {
       d <- or_get(paste0(sp$cmp, ", ", ag_type_key[[b]]))
       n <- or_bars(g, d, ag_type_cols[[b]], b_off[[b]], 0.15)
-      or_stars(g, d, b_off[[b]], 0.35)
+      or_stars(g, d, b_off[[b]], 1)
       n
     }, numeric(1)))
   }
@@ -377,12 +374,12 @@ if (cog_ag_types && file.exists(or_file)) {
     gb <- strip_geom(gr$b)
     x0 <- min(ga$mid - ga$hw, gb$mid - gb$hw)
     x1 <- max(ga$mid + ga$hw, gb$mid + gb$hw)
-    y0 <- mx_y + 1
+    y0 <- mx_y + 0.75
     segments(x0, y0 + 2.30, x1, y0 + 2.30, col = "grey30", lwd = 0.8,
              xpd = NA)
     segments(c(x0, x1), y0 + 2.30, c(x0, x1), y0 + 2.12, col = "grey30",
              lwd = 0.8, xpd = NA)
-    text((x0 + x1) / 2, y0 + 2.95, gr$title, cex = 0.6, col = "grey20",
+    text((x0 + x1) / 2, y0 + 2.95, gr$title, cex = 0.72, col = "grey20",
          xpd = NA)
   }
 
@@ -399,8 +396,8 @@ if (cog_ag_types && file.exists(or_file)) {
   
 }
 
-mtext("Odds ratio", side =1, adj = 0.8725,
-      outer = TRUE, line = -1)
+mtext("Odds ratio", side = 1, line = 3.5,
+      at = par("usr")[2] + ln_x(mean(c(or_strip_at(1)[1], or_strip_at(or_n_strips)[2]))))
 mtext("b", side = 3, adj =1.05, font = 2, line = -1)
 
 # add legend
@@ -413,25 +410,28 @@ if (cog_ag_types) {
   u <- par("usr")
 
   l_txt <- c(names(ag_type_cols), "Median")
-  l_y   <- u[4] + (u[4] - u[3]) * 0.045
+  l_y   <- u[4] + (u[4] - u[3]) * 0.05
 
   # shrink until the row fits the device, then left-align it on the box
-  l_cex <- 0.8
+  l_x   <- mean(u[1:2])
+  l_cex <- 1
   repeat {
-    lw <- legend(x = u[1], y = l_y, plot = FALSE, legend = l_txt,
+    lw <- legend(x = l_x, y = l_y, plot = FALSE, legend = l_txt, xjust = 0.5,
                  pch = c(22, 22, 22, 23), horiz = TRUE, bty = "n",
-                 cex = l_cex, x.intersp = 0.7)$rect$w
-    if (lw <= diff(u[1:2]) * 1.02 || l_cex < 0.45) break
+                 cex = l_cex, x.intersp = 0.7,
+                 text.width = strwidth(l_txt, cex = l_cex))$rect$w
+    if (lw <= diff(grconvertX(c(0.02, 0.98), "ndc", "user")) || l_cex < 0.72) break
     l_cex <- l_cex - 0.02
   }
 
-  legend(x = u[1], y = l_y, xpd = NA,
+  legend(x = l_x, y = l_y, xpd = NA, xjust = 0.5,
          legend = l_txt,
          pch = c(22, 22, 22, 23),
          pt.bg = c(adjustcolor(ag_type_cols, 0.55), "white"),
          col = c(rep(NA, 3), "grey20"),
          pt.cex = c(1.1, 1.1, 1.1, 0.75),
-         horiz = TRUE, bty = "n", cex = l_cex, x.intersp = 0.7)
+         horiz = TRUE, bty = "n", cex = l_cex, x.intersp = 0.7,
+         text.width = strwidth(l_txt, cex = l_cex))
 
 } else {
 
@@ -441,18 +441,20 @@ legend("top",c(pt_lab, "Median"),#c("Set 1", "Set 2"),
                # "darkgoldenrod3"),
        pt.bg = c(NULL,"white"), 
        # pt.bg = c(NULL,"darkgoldenrod1"),
-       pt.cex = c(0.65,1.2),
+       pt.cex = c(0.72,1.2),
        horiz = TRUE,
        bty = "n", cex = 0.95)
 
 }
+
+
 
 # add broad categories
 # anchored off the current margins, so that they track the device width
 # rather than the hard-coded offsets of the narrower figure
 # side 4 lines run outward from the right edge of the plot region, so the
 # offset is the plot width in lines plus the depth into the left margin
-brd_tick <- -(par("pin")[1] / par("csi") + 14.5)
+brd_tick <- -(par("pin")[1] / par("csi") + 15.9)
 brd_lab  <- brd_tick - 2.5
 
 for (i in unique(cog_set$desc)) {
@@ -472,7 +474,7 @@ for (i in unique(cog_set$desc)) {
     axis(side = 4,
          line = brd_lab,
          tick = FALSE,
-         cex.axis = 0.5,
+         cex.axis = 1,
          at = mean(c(axis_grp_dat$min,
                      axis_grp_dat$max)),
          labels = paste(strwrap(i, width = 20), 
@@ -517,17 +519,26 @@ extreme_labs <- merge(extreme_labs,
 if (cog_ag_types) {
 
   extreme_labs[, lab := tidy_name]
+  
+  # gene symbols e.g. mobH to italic; set before lab_short and truncation change lab
+  extreme_labs[, is_gene_symbol := grepl("^[a-z]{3}[A-Z]?[0-9]*$", lab)]
+  
 
   hit <- match(extreme_labs$lab, names(lab_short))
   extreme_labs[!is.na(hit), lab := unname(lab_short[hit[!is.na(hit)]])]
 
-  extreme_labs[nchar(lab) > max_lab,
-               lab := paste0(substr(lab, 1, max_lab - 1), "\u2026")]
+  extreme_labs[, hw := strwidth(lab, cex = 0.72) / 2]
+  extreme_labs[, x_lab := fifelse(signed_logp > 0,
+                                  pmin(pmax(x_plot, lm_trans(0) + ln_x(0.3) + hw),
+                                       par("usr")[2] - ln_x(0.3) - hw),
+                                  pmin(pmax(x_plot, par("usr")[1] + ln_x(0.3) + hw),
+                                       min(cog_set[signed_logp > 0, x_plot]) - ln_x(0.3) - hw))]
 
   with(extreme_labs,
-       text(x_plot, new_y, xpd = NA,
+       text(x_lab, new_y, xpd = NA,
             labels = lab,
-            cex = 0.4,
+            font = fifelse(is_gene_symbol, 3, 1),
+            cex = 0.72,
             pos = 3,
             offset = 0.1))
 
@@ -535,13 +546,28 @@ if (cog_ag_types) {
   with(extreme_labs,
        text(x_plot, new_y,xpd = TRUE,
             labels = consensus_product, 
-            cex = 0.45,
+            cex = 0.72,
             pos = 3,
             offset = 0.25))
 }
+}
 
 
-dev.off()
+
+# plot outputs ------------------------------------------------------------
+
+png(paste0(outdir_fig, "/piS_theta_cog_by_ag_type_set_1.png"),
+    width = 180, height = 125,
+    units = "mm", res = 300,
+    pointsize = 7, type = "cairo")
+draw_cog_plot(); dev.off()
+
+
+cairo_ps(paste0(outdir_fig, "/ms_eps/piS_theta_cog_by_ag_type_set_1.eps"),
+         width = 180 / 25.4, height = 125 / 25.4,
+         pointsize = 7, family = "Arial")
+
+draw_cog_plot(); dev.off()
 
 
 

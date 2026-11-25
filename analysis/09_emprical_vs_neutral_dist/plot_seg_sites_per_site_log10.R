@@ -35,7 +35,7 @@ par(bty = "o")
 
 plot(gene_pvals$freq, log10(gene_pvals$s_per_site), type = "n", lwd = 1.1,
      xlab = expression("Pangenome frequency ("*italic(k)*")"),
-     ylab = "Log10 Segregating sites per site", las=2, xaxt = "n")
+     ylab = expression("Log"[10]~ "Segregating sites per site", las=2, xaxt = "n"))
 
 # axis(side = 2, at = max(gene_pvals$s_per_site)/2,
 #      labels = "Segregating sites per site", 
@@ -90,49 +90,8 @@ legend("bottomright", #horiz = TRUE,
 legend("bottom", expression(hat(italic(alpha)) == 2.89*","~hat(italic(theta)) == 0.031),
        bty = "n", cex = 0.9)
 
-# sanity checks (new)
-trouble_children = data.table(gene_family = c("g004051", "g003783", "g001147", "g000322", # O1/O2 O-antigen locus (one locus, A308:A309)
-                                              "g003390", "g003914",                       # T6SS (one cluster, A164:A165)
-                                              "g003299", "g001254",                       # AbiE toxin-antitoxin operon (A22:A23)
-                                              "g002556",                                  # acid resistance
-                                              "g001058",                                  # chromate efflux
-                                              "g002655", "g003239",                       # acetoin catabolism operon (A169:A170)
-                                              "g002126_1",                                # glycerol-3-phosphate uptake (fosfomycin entry)
-                                              "g006452"),                                 # fumarate hydratase
-                              consensus_gene_name = c("wzm", "wzt", "glf", "wbbM",
-                                                      "vgrG", "tssA",
-                                                      "abiEi", "abiEii",
-                                                      "asr",
-                                                      "chrA",
-                                                      "acoA", "acoB",
-                                                      "glpT",
-                                                      "fumarate hydratase"),
-                              dx = c(12, 12, -6, -8,
-                                     -10, -8,
-                                     -9, -8,
-                                     6, 
-                                     -6,
-                                     -9,
-                                     9, -6,
-                                     4), 
-                                # 
-                                # 
-                                # 16,  16, -16, -18,
-                                #      -10, -10,
-                                #      -13, -9,
-                                #       10,
-                                #      -10,
-                                #      -13,  13,
-                                #      -10,
-                                #       8),
-                              dy = c( 0.060, -0.005,  0.040,  0.000,
-                                      0.030, -0.030,
-                                      0.000,  -0.015,
-                                     -0.040,
-                                      0.050,
-                                     -0.050, -0.020,
-                                      0.040,
-                                      0.005))
+# sanity checks (new)trouble_children = fread(paste0(outdir_dat, "/trouble_children.csv"))
+trouble_children = fread(paste0(outdir_dat, "/trouble_children.csv"))
 
 tc <- merge(trouble_children,
             gene_pvals[, .(gene_family, log10(s_per_site), freq)],

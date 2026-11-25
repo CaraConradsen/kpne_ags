@@ -92,46 +92,7 @@ legend("topleft", expression(hat(italic(alpha)) == 2.89*","~hat(italic(theta)) =
        bty = "n", cex = 0.9)
 
 # sanity checks (new)
-trouble_children = data.table(gene_family = c("g004051", "g003783", "g001147", "g000322", # O1/O2 O-antigen locus (one locus, A308:A309)
-                                              "g003390", "g003914",                       # T6SS (one cluster, A164:A165)
-                                              "g003299", "g001254",                       # AbiE toxin-antitoxin operon (A22:A23)
-                                              "g002556",                                  # acid resistance
-                                              "g001058",                                  # chromate efflux
-                                              "g002655", "g003239",                       # acetoin catabolism operon (A169:A170)
-                                              "g002664",                                  # ectoine degradation (A68:A69)
-                                              "g003377", "g004320",                       # sorbose/sorbitol (A7:A8)
-                                              "g002126_1",                                # glycerol-3-phosphate uptake (fosfomycin entry)
-                                              "g006452"),                                 # fumarate hydratase
-                              consensus_gene_name = c("wzm", "wzt", "glf", "wbbM",
-                                                      "vgrG", "tssA",
-                                                      "abiEi", "abiEii",
-                                                      "asr",
-                                                      "chrA",
-                                                      "acoA", "acoB",
-                                                      "phyH",
-                                                      "sorF", "sorC",
-                                                      "glpT",
-                                                      "ttdA"),
-                              dx = c( 18,  18, -18, -20,
-                                     -12, -12,
-                                     -15, -11,
-                                      12,
-                                     -12,
-                                     -15,  15,
-                                      12, 
-                                     -15,  10,
-                                     -12,
-                                      10),
-                              dy = c( 0.060, -0.005,  0.040,  0.000,
-                                      0.030, -0.030,
-                                      0.000,  -0.015,
-                                     -0.040,
-                                      0.050,
-                                     -0.050, -0.020,
-                                      0.040,  
-                                      0.040, 0.025,
-                                      0.040,
-                                      0.005))
+trouble_children = fread(paste0(outdir_dat, "/trouble_children.csv"))
 
 tc <- merge(trouble_children,
             gene_pvals[, .(gene_family, s_per_site, freq)],

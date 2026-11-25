@@ -27,11 +27,21 @@ invisible(sapply(
 # this function attaches libraries, but also checks and installs missing packages
 packages <- c("ape","Biostrings","BSgenome", "doParallel","data.table", "castor", "MASS", "yyjsonr",
               "eulerr","foreach","GenomicRanges","gUtils","ggnewscale", "RCy3", "pBrackets","png",
-              "msaR","shape", "ade4", "genoPlotR","MASS","phangorn","plotrix","VennDiagram",
-              "ggiraph","htmlwidgets","igraph", "jsonlite","plyranges","pegas", "phyloseq",
+              "msaR","shape", "ade4", "genoPlotR","MASS","phangorn","plotrix","VennDiagram", "plotrix",
+              "ggiraph","htmlwidgets","igraph", "jsonlite","plyranges","pegas", "phyloseq", "psych",
               "phytools","RColorBrewer","rtracklayer", "seqinr","stats","stringr", "vegan",
               "vioplot", "homoplasyFinder", "grid", "gridBase", "eulerr", "xlsx","caper",
-              "openxlsx", "beeswarm", "dendextend", "treeWAS", "parallel")
+              "openxlsx", "beeswarm", "dendextend", "treeWAS", "trackViewer", "parallel")
+
+
+
+
+# font for eps figure outputs
+library(sysfonts); library(showtextdb); library(showtext)
+## Load Times New Roman fonts on Windows
+font_add("arial", regular = "arial.ttf", bold = "arialbd.ttf", italic = "ariali.ttf", bolditalic = "arialbi.ttf")
+
+
 
 # load in functions, uses BiocManager::install which handles both 
 # CRAN and Bioconductor packages

@@ -114,9 +114,16 @@ allele_stats[, is_cloud := fcase(freq < (0.15*260), "y",
 
 fwrite(allele_stats, paste0(outdir_dat, "/ag_allele_stats.csv"))
 
-with(allele_stats[call == "ns" & is_cloud !="y"],
-     suppressWarnings(cor.test(s_per_site, H, method = "spearman")))
+rho_n <- function(d) {
+  ct <- suppressWarnings(cor.test(d$s_per_site, d$H, method = "spearman"))
+  list(rho = unname(ct$estimate), n = nrow(d), p = ct$p.value)
+}
 
+sig_outiers <- rho_n(allele_stats[call != "ns" & is_cloud != "y"])
+ns_outlier  <- rho_n(allele_stats[call == "ns" & is_cloud != "y"])
+
+psych::r.test(n   = sig_outiers$n,   r12 = sig_outiers$rho,
+              r34 = ns_outlier$rho,  n2  = ns_outlier$n)
 
 # Panel helper ------------------------------------------------------------
 

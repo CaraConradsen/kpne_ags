@@ -24,6 +24,7 @@ close.screen(1)
 
 screen(2)
 
+# source("./analysis/09_emprical_vs_neutral_dist/plot_seg_sites_per_site.R")
 source("./analysis/09_emprical_vs_neutral_dist/plot_seg_sites_per_site.R")
 mtext("b", side = 3, adj = -0.15, font = 2)
 
