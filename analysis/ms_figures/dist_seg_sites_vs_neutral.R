@@ -1,6 +1,6 @@
-png(paste0(outdir_fig,"/dist_seg_sites_vs_neutral.png"),
-    width = 266, height = 126, units = "mm", res = 600,
-    pointsize = 12, type = "cairo", family = "sans")
+# plots -------------------------------------------------------------
+
+draw_neutrality_dist <- function(){
 
 par(mar = c(4, 5, 2, 1),   # lines, smaller because pointsize is 7
     tcl = -0.25, xpd = TRUE,                    # shorter ticks
@@ -33,4 +33,20 @@ close.screen(2)
 
 close.screen(all.screens=TRUE)
 
-dev.off()
+}
+
+#PNG
+
+png(paste0(outdir_fig,"/dist_seg_sites_vs_neutral.png"),
+    width = 180, height = 85, units = "mm", res = 600,
+    pointsize = 7, type = "cairo", family = "sans",
+    symbolfamily = cairoSymbolFont("Arial", usePUA = FALSE)) 
+
+draw_neutrality_dist(); dev.off()
+
+
+cairo_ps(paste0(outdir_fig, "/ms_eps/dist_seg_sites_vs_neutral.eps"),
+         width = 180 / 25.4, height = 85 / 25.4,
+         pointsize = 7, family = "Arial")
+
+draw_neutrality_dist(); dev.off()

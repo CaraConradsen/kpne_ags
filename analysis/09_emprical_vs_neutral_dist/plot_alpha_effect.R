@@ -149,7 +149,7 @@ alpha_vals[alpha_vals==2.4] <- 2.8 # Quick fix
 
 legend("topleft", bty = "n",
        legend = sapply(alpha_vals, function(x) bquote(alpha == .(x))),
-       col = line_cols, lty = c(1,2,2,2), lwd = 1.8)
+       col = line_cols, lty = c(1, rep(2, length(alpha_vals) - 1)), lwd = 1.8)
 
 # dev.off()
 

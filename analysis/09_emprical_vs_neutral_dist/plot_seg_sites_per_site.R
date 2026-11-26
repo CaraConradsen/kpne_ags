@@ -36,6 +36,7 @@ par(bty = "o")
 plot(gene_pvals$freq, gene_pvals$s_per_site, type = "n", lwd = 1.1,
      xlab = expression("Pangenome frequency ("*italic(k)*")"),
      ylab = "Segregating sites per site",
+     xlim = c(-2.5,255),
      xaxt = "n", las = 2, ylim = c(0,0.6))
 
 # axis(side = 2, at = max(gene_pvals$s_per_site)/2,
@@ -80,7 +81,7 @@ p_part <- if (spearmans$p.value < 0.001) {
 mtext(bquote(rho == .(rho_val) * ";" ~ .(p_part)),
       side = 3, adj = 0.5, line = -1.9, cex = 0.9)
 
-legend("topright", #horiz = TRUE,
+legend("topright", inset = c(0,0.02),
        title = expression("BH FDR,"~italic(q) < 0.05),
        legend = c("High outlier","Low outlier",
                   "Non-significant"),
@@ -88,7 +89,7 @@ legend("topright", #horiz = TRUE,
        pch = c(16, 16,16),
        bty = "n", cex = 0.9)
 
-legend("topleft", expression(hat(italic(alpha)) == 2.89*","~hat(italic(theta)) == 0.031),
+legend("topleft", expression(hat(italic("\u03B1")) == 2.89*","~hat(italic("\u03B8")) == 0.031),
        bty = "n", cex = 0.9)
 
 # sanity checks (new)
@@ -119,24 +120,4 @@ text(tc$freq + tc$dx, tc$s_per_site + tc$dy,
      labels = tc$consensus_gene_name,
      pos = ifelse(tc$dx < 0, 2, 4), offset = 0.2,
      cex = 0.8, font = 3, xpd = NA)
-# dev.off()
 
-# 
-# gene_pvals[call == "low" & freq < 100] -> ad_track_candidates
-# 
-# anno <- fread(paste0(outdir_dat, "/all_pirate_anno_full.csv"),
-#               select = c("locus_tag","gene_family", "product","gene_length", "gene",
-#                          "freq", "ag_type","ST",
-#                          "consensus_gene_name","consensus_product",
-#                          "alleles_at_maximum_threshold"))
-# 
-# anno <- anno[gene_family %chin% ad_track_candidates$gene_family]
-# anno <- anno[, n_ST_allele := .N, by = c("gene_family", "ST")]
-# 
-# anno <- unique(anno[,.(gene_family, freq, consensus_gene_name, consensus_product,ST, n_ST_allele, alleles_at_maximum_threshold)])
-# 
-# anno <- anno[, n_ST := uniqueN(ST), gene_family]
-# 
-# anno <- dcast(anno, gene_family + freq + consensus_gene_name + consensus_product + alleles_at_maximum_threshold + n_ST ~ ST,  value.var = "n_ST_allele" )
-# 
-# fwrite(anno, "C:/Users/carac/Desktop/low_ags.csv")

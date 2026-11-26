@@ -140,6 +140,9 @@ pirate_anno[, .(n_fam_changed = uniqueN(gene_family[freq != number_genomes]),
 ST_info <- fread("C:/Users/carac/Dropbox/Vos_Lab/SpARK data/spark_metadata.csv", 
                  select = c("id", "ST"))
 
+# collapse locus variants into the parent ST, e.g. ST143-2LV -> ST143
+ST_info[, ST := sub("-[0-9]+LV$", "", ST)]
+
 colnames(ST_info)[1] = "geno_id"
 
 pirate_anno <- merge(pirate_anno, ST_info,
